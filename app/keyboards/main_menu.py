@@ -8,7 +8,7 @@ def main_menu_keyboard(is_admin: bool) -> ReplyKeyboardMarkup:
     ]
 
     if is_admin:
-        rows.append([KeyboardButton(text="➕ Добавить материал")])
+        rows.append([KeyboardButton(text="➕ Добавить объявление")])
         rows.append([KeyboardButton(text="⚙️ Управление объявлениями")])
 
     return ReplyKeyboardMarkup(

@@ -16,6 +16,7 @@ async def main() -> None:
 
     # Инициализируем Django до загрузки обработчиков
     setup_django()
+    from app.handlers.listings import router as listings_router
 
     # Импортируем обработчики после инициализации Django
     from app.handlers.start import router as start_router
@@ -23,6 +24,7 @@ async def main() -> None:
     bot = create_bot()
     dp = Dispatcher()
     dp.include_router(start_router)
+    dp.include_router(listings_router)
 
     try:
         await dp.start_polling(bot)
