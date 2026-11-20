@@ -1,9 +1,30 @@
-.venv/
+# Python
 __pycache__/
 *.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+
+# Environment variables and secrets
 .env
-.pytest_cache/
+.env.*
+!.env.example
+
+# Django
+web/db.sqlite3
+web/media/
+web/staticfiles/
+
+# Logs
+*.log
+
+# IDE
 .idea/
 .vscode/
-dist/
-build/
+
+# OS
+.DS_Store
+Thumbs.db
+

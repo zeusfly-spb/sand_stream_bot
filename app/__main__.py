@@ -2,9 +2,10 @@ import asyncio
 import logging
 
 from aiogram import Dispatcher
+
 from app.bot import create_bot
 from app.config import settings
-from app.handlers.start import router as start_router
+from app.django_setup import setup_django
 
 
 async def main() -> None:
@@ -12,6 +13,12 @@ async def main() -> None:
         level=getattr(logging, settings.log_level.upper(), logging.INFO),
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     )
+
+    # Инициализируем Django до загрузки обработчиков
+    setup_django()
+
+    # Импортируем обработчики после инициализации Django
+    from app.handlers.start import router as start_router
 
     bot = create_bot()
     dp = Dispatcher()

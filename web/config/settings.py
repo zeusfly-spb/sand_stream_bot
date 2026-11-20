@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
         # SandStreamBot applications
     'catalog',
+    "accounts",
 ]
 
 MIDDLEWARE = [
