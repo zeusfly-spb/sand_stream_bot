@@ -7,6 +7,12 @@ from app.config import settings
 from app.states.listing import ListingForm
 
 from decimal import Decimal, InvalidOperation
+from aiogram.types import CallbackQuery
+from app.keyboards.listings import listing_confirmation_keyboard
+
+from html import escape
+from aiogram.filters import Command
+
 
 router = Router()
 
@@ -312,13 +318,108 @@ async def finish_photos(
     state: FSMContext,
 ) -> None:
     data = await state.get_data()
+
+    material = escape(data.get("material_name", "—"))
+    title = escape(data.get("title", "—"))
+    description = escape(data.get("description") or "Не указано")
+    quantity = escape(data.get("quantity", "—"))
+    city = escape(data.get("city", "—"))
+    address = escape(data.get("address") or "Не указан")
+
+    unit = "м³" if data.get("unit") == "m3" else "тонн"
+
+    price_value = data.get("price", "0")
+    price = (
+        "Бесплатно"
+        if Decimal(price_value) == 0
+        else f"{escape(price_value)} руб."
+    )
+
     photos = data.get("photos", [])
+
+    preview = (
+        "📋 <b>Проверьте объявление</b>\n\n"
+        f"🪨 <b>Материал:</b> {material}\n"
+        f"📝 <b>Заголовок:</b> {title}\n"
+        f"📄 <b>Описание:</b> {description}\n"
+        f"📦 <b>Количество:</b> {quantity} {unit}\n"
+        f"💰 <b>Цена:</b> {price}\n"
+        f"📍 <b>Город:</b> {city}\n"
+        f"🏠 <b>Адрес:</b> {address}\n"
+        f"📸 <b>Фотографий:</b> {len(photos)}\n\n"
+        "Всё верно? Подтвердите объявление."
+    )
 
     await state.set_state(ListingForm.confirmation)
 
     await message.answer(
-        f"Фотографии: {len(photos)}.\n\n"
-        "Шаг 10 из 10.\n"
-        "Загрузка фотографий завершена.\n"
-        "Следующий этап — проверка и подтверждение объявления."
+        preview,
+        reply_markup=listing_confirmation_keyboard(),
     )
+
+
+@router.callback_query(
+    ListingForm.confirmation,
+    F.data == "listing:confirm",
+)
+async def confirm_listing(
+    callback: CallbackQuery,
+    state: FSMContext,
+) -> None:
+    user_id = callback.from_user.id
+
+    if user_id not in settings.admin_id_set:
+        await callback.answer("У вас нет прав.", show_alert=True)
+        return
+
+    await callback.answer("Данные подтверждены!")
+
+    if isinstance(callback.message, Message):
+        await callback.message.edit_reply_markup(reply_markup=None)
+        await callback.message.answer(
+            "✅ <b>Объявление подтверждено!</b>\n\n"
+            "Данные сохранены в форме.\n"
+            "Следующий этап — подключение сохранения в базу данных."
+        )
+
+
+@router.callback_query(
+    ListingForm.confirmation,
+    F.data == "listing:cancel",
+)
+async def cancel_listing(
+    callback: CallbackQuery,
+    state: FSMContext,
+) -> None:
+    await state.clear()
+    await callback.answer("Создание объявления отменено.")
+
+    if isinstance(callback.message, Message):
+        await callback.message.edit_reply_markup(reply_markup=None)
+        await callback.message.answer(
+            "❌ Создание объявления отменено."
+        )
+
+
+@router.message(Command("cancel"))
+async def cancel_listing_creation(
+    message: Message,
+    state: FSMContext,
+) -> None:
+    current_state = await state.get_state()
+
+    if current_state is None:
+        await message.answer(
+            "Сейчас у вас нет активного создания объявления."
+        )
+        return
+
+    await state.clear()
+
+    await message.answer(
+        "❌ Создание объявления отменено.\n\n"
+        "Все введённые данные очищены."
+    )
+
+
+

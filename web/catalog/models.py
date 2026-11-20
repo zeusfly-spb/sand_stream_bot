@@ -59,6 +59,15 @@ class Listing(models.Model):
         verbose_name="Материал",
     )
 
+    created_by = models.ForeignKey(
+        "accounts.TelegramUser",
+        on_delete=models.PROTECT,
+        related_name="listings",
+        null=True,
+        blank=True,
+        verbose_name="Автор объявления",
+    )
+
     title = models.CharField(
         max_length=200,
         verbose_name="Заголовок",

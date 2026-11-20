@@ -33,6 +33,7 @@ class ListingAdmin(admin.ModelAdmin):
     list_display = (
         "title",
         "material",
+        "created_by",
         "quantity",
         "unit",
         "price",
