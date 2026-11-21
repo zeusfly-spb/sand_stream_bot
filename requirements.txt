@@ -35,7 +35,7 @@ pyinstaller==6.22.2
 pyinstaller-hooks-contrib==2026.6
 PyJWT==2.15.1
 python-dotenv==1.2.3
-python-telegram-bot==21.10
+# python-telegram-bot==21.10
 pywin32-ctypes==0.2.3
 redis==6.4.0
 setuptools==84.0.0

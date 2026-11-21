@@ -14,11 +14,6 @@ from html import escape
 from aiogram.filters import Command
 from app.services.listings import create_listing
 
-
-from pathlib import Path
-from uuid import uuid4
-from django.conf import settings as django_settings
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -96,7 +91,7 @@ async def process_material(
     await state.set_state(ListingForm.title)
 
     await message.answer(
-        "Шаг 2 из 9.\n"
+        "Шаг 2 из 10.\n"
         "Введите заголовок объявления:\n\n"
         "Например: Продам 20 м³ карьерного песка."
     )
@@ -382,7 +377,7 @@ async def finish_photos(
     photos = data.get("photos", [])
 
     preview = (
-        "📋 <b>Проверьте объявление</b>\n\n"
+        "📋 <b>Шаг 10 из 10. Проверьте объявление</b>\n\n"
         f"🪨 <b>Материал:</b> {material}\n"
         f"📝 <b>Заголовок:</b> {title}\n"
         f"📄 <b>Описание:</b> {description}\n"
@@ -400,9 +395,6 @@ async def finish_photos(
         preview,
         reply_markup=listing_confirmation_keyboard(),
     )
-
-
-
 
 
 @router.callback_query(
@@ -435,7 +427,9 @@ async def confirm_listing(
         listing_id = await create_listing(
             data,
             telegram_user_data,
+            callback.bot,
         )
+
     except Exception:
         logger.exception("Ошибка создания объявления")
         await callback.answer(
@@ -455,22 +449,6 @@ async def confirm_listing(
             "✅ <b>Объявление создано!</b>\n\n"
             f"Номер объявления: <b>#{listing_id}</b>\n"
             "Статус: Активно."
-        )
-
-    user_id = callback.from_user.id
-
-    if user_id not in settings.admin_id_set:
-        await callback.answer("У вас нет прав.", show_alert=True)
-        return
-
-    await callback.answer("Данные подтверждены!")
-
-    if isinstance(callback.message, Message):
-        await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.message.answer(
-            "✅ <b>Объявление подтверждено!</b>\n\n"
-            "Данные сохранены в форме.\n"
-            "Следующий этап — подключение сохранения в базу данных."
         )
 
 

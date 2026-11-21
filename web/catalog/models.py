@@ -97,6 +97,8 @@ class Listing(models.Model):
     )
 
     contact_name = models.CharField("имя контактного лица", max_length=100, blank=True)
+    address = models.CharField("адрес", max_length=255, blank=True)
+
     contact_phone = models.CharField("телефон", max_length=32, blank=True)
 
     created_at = models.DateTimeField("создано", auto_now_add=True)

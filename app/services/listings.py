@@ -1,54 +1,32 @@
+from decimal import Decimal
+from pathlib import Path
+from uuid import uuid4
 
 from asgiref.sync import sync_to_async
-from decimal import Decimal
+from django.conf import settings as django_settings
 from django.db import transaction
+from django.utils import timezone
+from django.utils.text import slugify
+
 from accounts.models import TelegramUser
-from catalog.models import Listing, Material
+from catalog.models import City, Listing, ListingPhoto, MaterialType
+
+UNIT_LABELS = {"m3": "м³", "ton": "тонн"}
 
 
-
-def _get_active_listings(limit: int = 10) -> list[dict]:
-    """Получает список активных объявлений из базы данных."""
-
-    listings = (
-        Listing.objects
-        .filter(status=Listing.Status.ACTIVE)
-        .select_related("material")
-        .order_by("-created_at")[:limit]
-    )
-
-    return [
-        {
-            "id": listing.id,
-            "title": listing.title,
-            "material": listing.material.name,
-            "quantity": listing.quantity,
-            "unit": listing.unit,
-            "price": listing.price,
-            "city": listing.city,
-        }
-        for listing in listings
-    ]
+def _slug_for(name: str) -> str:
+    base = slugify(name, allow_unicode=True) or "material"
+    slug = base
+    index = 2
+    while MaterialType.objects.exclude(name=name).filter(slug=slug).exists():
+        slug = f"{base}-{index}"
+        index += 1
+    return slug
 
 
-async def get_active_listings(limit: int = 10) -> list[dict]:
-    """Асинхронно получает активные объявления."""
-
-    return await sync_to_async(
-        _get_active_listings,
-        thread_sensitive=True,
-    )(limit)
-
-
-
-def _create_listing(
-    data: dict,
-    telegram_user_data: dict,
-) -> int:
-    """Создаёт объявление и связывает его с Telegram-пользователем."""
-
+def _create_listing(data: dict, telegram_user_data: dict, photo_paths: list) -> str:
+    """Создаёт объявление, пользователя и фотографии. Возвращает UUID строкой."""
     with transaction.atomic():
-        # Находим или регистрируем Telegram-пользователя.
         telegram_user, _ = TelegramUser.objects.update_or_create(
             telegram_id=telegram_user_data["telegram_id"],
             defaults={
@@ -58,37 +36,54 @@ def _create_listing(
             },
         )
 
-        # Находим материал или добавляем его в справочник.
-        material, _ = Material.objects.get_or_create(
+        unit_label = UNIT_LABELS.get(data["unit"], "м³")
+
+        material, _ = MaterialType.objects.get_or_create(
             name=data["material_name"],
+            defaults={"slug": _slug_for(data["material_name"])},
         )
 
-        # Создаём объявление.
+        city = City.objects.filter(name__iexact=data["city"]).first()
+
         listing = Listing.objects.create(
-            material=material,
-            created_by=telegram_user,
+            seller=telegram_user,
+            material_type=material,
+            material_raw=data["material_name"],
+            city=city,
+            city_raw="" if city else data["city"],
             title=data["title"],
             description=data.get("description", ""),
-            quantity=Decimal(data["quantity"]),
-            unit=data["unit"],
-            price=Decimal(data["price"]),
-            status=Listing.Status.ACTIVE,
-            city=data["city"],
             address=data.get("address", ""),
-            contact_name=telegram_user.first_name,
+            quantity=f"{data['quantity']} {unit_label}",
+            price=Decimal(data["price"]),
+            price_unit=f"за {unit_label}",
+            status=Listing.Status.ACTIVE,
+            contact_name=telegram_user.first_name or "",
+            contact_phone=getattr(telegram_user, "phone", "") or "",
+            published_at=timezone.now(),
         )
 
-        return listing.id
+        media_root = django_settings.MEDIA_ROOT
+        for position, path in enumerate(photo_paths):
+            photo = ListingPhoto(listing=listing, position=position)
+            photo.image.name = Path(path).relative_to(media_root).as_posix()
+            photo.save()
+
+        return str(listing.id)
 
 
-async def create_listing(
-    data: dict,
-    telegram_user_data: dict,
-) -> int:
-    """Асинхронная обёртка для создания объявления."""
+async def create_listing(data: dict, telegram_user_data: dict, bot) -> str:
+    """Скачивает фото из Telegram и создаёт объявление."""
+    photo_paths = []
 
-    return await sync_to_async(
-        _create_listing,
-        thread_sensitive=True,
-    )(data, telegram_user_data)
+    for file_id in data.get("photos", []):
+        name = f"{uuid4().hex}.jpg"
+        directory = django_settings.MEDIA_ROOT / "listings"
+        directory.mkdir(parents=True, exist_ok=True)
+        destination = directory / name
+        await bot.download(file_id, destination=destination)
+        photo_paths.append(destination)
 
+    return await sync_to_async(_create_listing, thread_sensitive=True)(
+        data, telegram_user_data, photo_paths
+    )
