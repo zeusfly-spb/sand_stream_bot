@@ -1,54 +1,47 @@
 from django.contrib import admin
-from django.utils.html import format_html
 
-from .models import Material, Listing, ListingPhoto
-
-
-class ListingPhotoInline(admin.TabularInline):
-    model = ListingPhoto
-    extra = 1
-    fields = ("image", "caption", "position", "preview")
-    readonly_fields = ("preview",)
-
-    @admin.display(description="Предпросмотр")
-    def preview(self, obj):
-        if obj.image:
-            return format_html(
-                '<img src="{}" width="100" style="object-fit: contain;" />',
-                obj.image.url,
-            )
-        return "Нет изображения"
+from .models import City, Listing, ListingPhoto, MaterialType
 
 
-@admin.register(Material)
-class MaterialAdmin(admin.ModelAdmin):
-    list_display = ("name", "is_active", "created_at")
+@admin.register(MaterialType)
+class MaterialTypeAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "is_active")
     list_filter = ("is_active",)
     search_fields = ("name",)
-    ordering = ("name",)
+    prepopulated_fields = {"slug": ("name",)}
+
+
+@admin.register(City)
+class CityAdmin(admin.ModelAdmin):
+    list_display = ("name", "region", "is_active")
+    list_filter = ("region", "is_active")
+    search_fields = ("name",)
 
 
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
     list_display = (
         "title",
-        "material",
-        "created_by",
-        "quantity",
-        "unit",
-        "price",
-        "status",
+        "seller",
+        "material_type",
         "city",
+        "price",
+        "price_unit",
+        "status",
         "created_at",
     )
-    list_filter = ("status", "material", "unit", "city")
-    search_fields = ("title", "description", "address", "contact_name")
-    autocomplete_fields = ("material",)
-    inlines = (ListingPhotoInline,)
+    list_filter = ("status", "material_type", "city")
+    search_fields = ("title", "description", "material_raw", "city_raw")
     readonly_fields = ("created_at", "updated_at")
-    list_select_related = ("material",)
+    ordering = ("-created_at",)
+
+    # Чтобы autocomplete_fields заработал, у MaterialTypeAdmin и CityAdmin
+    # должен быть search_fields — он уже задан выше.
+    autocomplete_fields = ("material_type", "city", "seller")
 
 
-admin.site.site_header = "SandStreamBot — управление"
-admin.site.site_title = "SandStreamBot"
-admin.site.index_title = "Панель управления"
+@admin.register(ListingPhoto)
+class ListingPhotoAdmin(admin.ModelAdmin):
+    list_display = ("listing", "position", "created_at")
+    list_filter = ("listing",)
+    ordering = ("listing", "position")

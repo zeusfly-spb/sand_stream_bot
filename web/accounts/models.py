@@ -6,8 +6,8 @@ class TelegramUser(models.Model):
 
     class Role(models.TextChoices):
         USER = "user", "Пользователь"
-        MANAGER = "manager", "Менеджер"
-        OWNER = "owner", "Владелец"
+        ADMIN = "admin", "Администратор"
+        OWNER = "owner", "Поставщик"
 
     telegram_id = models.BigIntegerField(
         unique=True,
@@ -38,13 +38,16 @@ class TelegramUser(models.Model):
         verbose_name="Телефон",
     )
 
-    role = models.CharField(
-        max_length=20,
-        choices=Role.choices,
-        default=Role.USER,
-        db_index=True,
-        verbose_name="Роль",
-    )
+    # role = models.CharField(
+    #     max_length=20,
+    #     choices=Role.choices,
+    #     default=Role.USER,
+    #     db_index=True,
+    #     verbose_name="Роль",
+    # )
+
+    role = models.CharField("роль", max_length=20, choices=Role.choices, default=Role.USER)
+
 
     is_blocked = models.BooleanField(
         default=False,
