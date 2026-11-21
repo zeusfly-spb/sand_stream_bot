@@ -1,0 +1,3 @@
+#changelist .changelist-form-container:not(:has(#changelist-filter)) {
+    flex-direction: column;
+}

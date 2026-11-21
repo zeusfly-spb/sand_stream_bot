@@ -11,5 +11,4 @@ class ListingForm(StatesGroup):
     price = State()
     city = State()
     address = State()
-    photos = State()
     confirmation = State()

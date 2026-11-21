@@ -70,7 +70,7 @@ async def start_listing(
 
     await message.answer(
         "➕ <b>Новое объявление</b>\n\n"
-        "Шаг 1 из 10.\n"
+        "Шаг 1 из 9.\n"
         "Введите название материала:\n\n"
         "Например: песок карьерный, щебень гранитный."
     )
@@ -91,7 +91,7 @@ async def process_material(
     await state.set_state(ListingForm.title)
 
     await message.answer(
-        "Шаг 2 из 10.\n"
+        "Шаг 2 из 9.\n"
         "Введите заголовок объявления:\n\n"
         "Например: Продам 20 м³ карьерного песка."
     )
@@ -110,7 +110,7 @@ async def process_title(
     await state.set_state(ListingForm.description)
 
     await message.answer(
-        "Шаг 3 из 10.\n"
+        "Шаг 3 из 9.\n"
         "Введите описание объявления:\n\n"
         "Например: Чистый карьерный песок, без примесей. "
         "Самовывоз или доставка."
@@ -135,7 +135,7 @@ async def process_description(
     await state.set_state(ListingForm.quantity)
 
     await message.answer(
-        "Шаг 4 из 10.\n"
+        "Шаг 4 из 9.\n"
         "Укажите количество материала:\n\n"
         "Например: 20 или 15.5"
     )
@@ -178,7 +178,7 @@ async def process_quantity(
     await state.set_state(ListingForm.unit)
 
     await message.answer(
-        "Шаг 5 из 10.\n"
+        "Шаг 5 из 9.\n"
         "Выберите единицу измерения:\n\n"
         "Введите «м3» для кубических метров "
         "или «тонн» для тонн."
@@ -201,7 +201,7 @@ async def process_unit(
         unit_label = "м³"
     elif unit in ("тонна", "тонны", "тонн", "т", "t"):
         unit_value = "ton"
-        unit_label = "тонн"
+        unit_label = "т"
     else:
         await message.answer(
             "Не понял единицу измерения.\n"
@@ -214,8 +214,9 @@ async def process_unit(
 
     await message.answer(
         f"Единица измерения: {unit_label}.\n\n"
-        "Шаг 6 из 10.\n"
-        "Укажите цену за всё количество материала в рублях.\n\n"
+        "Шаг 6 из 9.\n"
+        f"Укажите цену за 1 {unit_label} в рублях.\n\n"
+        "Например: 850.\n"
         "Введите 0, если материал отдаётся бесплатно."
     )
 
@@ -256,11 +257,17 @@ async def process_price(
     await state.update_data(price=str(price))
     await state.set_state(ListingForm.city)
 
-    price_text = "Бесплатно" if price == 0 else f"{price} руб."
+    unit_label = "м³" if (await state.get_data()).get("unit") == "m3" else "т"
+
+    price_text = (
+        "Бесплатно"
+        if price == 0
+        else f"{price} руб. за {unit_label}"
+    )
 
     await message.answer(
         f"Цена: {price_text}.\n\n"
-        "Шаг 7 из 10.\n"
+        "Шаг 7 из 9.\n"
         "Укажите город или населённый пункт:\n\n"
         "Например: Санкт-Петербург или Всеволожск."
     )
@@ -285,11 +292,12 @@ async def process_city(
     await state.set_state(ListingForm.address)
 
     await message.answer(
-        "Шаг 8 из 10.\n"
+        "Шаг 8 из 9.\n"
         "Укажите адрес или местоположение материала.\n\n"
         "Например: улица Промышленная, участок 15.\n\n"
         "Если адрес неизвестен, отправьте дефис (-)."
     )
+
 
 
 @router.message(ListingForm.address)
@@ -313,49 +321,7 @@ async def process_address(
         return
 
     await state.update_data(address=address)
-    await state.set_state(ListingForm.photos)
 
-    await message.answer(
-        "Шаг 9 из 10.\n"
-        "Теперь отправьте фотографии материала.\n\n"
-        "Можно отправить несколько фотографий по одной.\n"
-        "Когда закончите, отправьте команду /done.\n\n"
-        "Если фотографий нет, сразу отправьте /done."
-    )
-
-
-
-@router.message(ListingForm.photos, F.photo)
-async def process_photo(
-    message: Message,
-    state: FSMContext,
-) -> None:
-    photo = message.photo[-1]
-
-    data = await state.get_data()
-    photos = data.get("photos", [])
-
-    if len(photos) >= 10:
-        await message.answer(
-            "Можно добавить не более 10 фотографий."
-        )
-        return
-
-    photos.append(photo.file_id)
-
-    await state.update_data(photos=photos)
-
-    await message.answer(
-        f"Фотография добавлена ({len(photos)}/10).\n"
-        "Можете отправить следующую или завершить загрузку командой /done."
-    )
-
-
-@router.message(ListingForm.photos, F.text == "/done")
-async def finish_photos(
-    message: Message,
-    state: FSMContext,
-) -> None:
     data = await state.get_data()
 
     material = escape(data.get("material_name", "—"))
@@ -363,29 +329,26 @@ async def finish_photos(
     description = escape(data.get("description") or "Не указано")
     quantity = escape(data.get("quantity", "—"))
     city = escape(data.get("city", "—"))
-    address = escape(data.get("address") or "Не указан")
+    address_text = escape(address or "Не указан")
 
-    unit = "м³" if data.get("unit") == "m3" else "тонн"
+    unit = "м³" if data.get("unit") == "m3" else "т"
 
     price_value = data.get("price", "0")
     price = (
         "Бесплатно"
         if Decimal(price_value) == 0
-        else f"{escape(price_value)} руб."
+        else f"{escape(price_value)} руб. за {unit}"
     )
 
-    photos = data.get("photos", [])
-
     preview = (
-        "📋 <b>Шаг 10 из 10. Проверьте объявление</b>\n\n"
+        "📋 <b>Шаг 9 из 9. Проверьте объявление</b>\n\n"
         f"🪨 <b>Материал:</b> {material}\n"
         f"📝 <b>Заголовок:</b> {title}\n"
         f"📄 <b>Описание:</b> {description}\n"
         f"📦 <b>Количество:</b> {quantity} {unit}\n"
         f"💰 <b>Цена:</b> {price}\n"
         f"📍 <b>Город:</b> {city}\n"
-        f"🏠 <b>Адрес:</b> {address}\n"
-        f"📸 <b>Фотографий:</b> {len(photos)}\n\n"
+        f"🏠 <b>Адрес:</b> {address_text}\n\n"
         "Всё верно? Подтвердите объявление."
     )
 
@@ -395,7 +358,6 @@ async def finish_photos(
         preview,
         reply_markup=listing_confirmation_keyboard(),
     )
-
 
 @router.callback_query(
     ListingForm.confirmation,
@@ -427,7 +389,6 @@ async def confirm_listing(
         listing_id = await create_listing(
             data,
             telegram_user_data,
-            callback.bot,
         )
 
     except Exception:
