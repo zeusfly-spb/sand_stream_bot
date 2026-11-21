@@ -12,9 +12,40 @@ from app.keyboards.listings import listing_confirmation_keyboard
 
 from html import escape
 from aiogram.filters import Command
+from app.services.listings import create_listing
+
+
+from pathlib import Path
+from uuid import uuid4
+from django.conf import settings as django_settings
+
+import logging
+logger = logging.getLogger(__name__)
+
 
 
 router = Router()
+
+@router.message(Command("cancel"))
+async def cancel_listing_creation(
+    message: Message,
+    state: FSMContext,
+) -> None:
+    current_state = await state.get_state()
+
+    if current_state is None:
+        await message.answer(
+            "Сейчас у вас нет активного создания объявления."
+        )
+        return
+
+    await state.clear()
+
+    await message.answer(
+        "❌ Создание объявления отменено.\n\n"
+        "Все введённые данные очищены."
+    )
+
 
 
 @router.message(F.text == "➕ Добавить объявление")
@@ -25,17 +56,30 @@ async def start_listing(
     user_id = message.from_user.id if message.from_user else 0
 
     if user_id not in settings.admin_id_set:
-        await message.answer("У вас нет прав для создания объявлений.")
+        await message.answer(
+            "У вас нет прав для создания объявлений."
+        )
+        return
+
+    current_state = await state.get_state()
+
+    if current_state is not None:
+        await message.answer(
+            "⚠️ У вас уже есть незавершённое объявление.\n\n"
+            "Продолжите заполнение или отправьте /cancel, "
+            "чтобы начать заново."
+        )
         return
 
     await state.set_state(ListingForm.material)
 
     await message.answer(
         "➕ <b>Новое объявление</b>\n\n"
-        "Шаг 1 из 9.\n"
+        "Шаг 1 из 10.\n"
         "Введите название материала:\n\n"
         "Например: песок карьерный, щебень гранитный."
     )
+
 
 
 @router.message(ListingForm.material)
@@ -358,6 +402,9 @@ async def finish_photos(
     )
 
 
+
+
+
 @router.callback_query(
     ListingForm.confirmation,
     F.data == "listing:confirm",
@@ -366,6 +413,50 @@ async def confirm_listing(
     callback: CallbackQuery,
     state: FSMContext,
 ) -> None:
+    user = callback.from_user
+
+    if user.id not in settings.admin_id_set:
+        await callback.answer(
+            "У вас нет прав.",
+            show_alert=True,
+        )
+        return
+
+    data = await state.get_data()
+
+    telegram_user_data = {
+        "telegram_id": user.id,
+        "username": user.username,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+    }
+
+    try:
+        listing_id = await create_listing(
+            data,
+            telegram_user_data,
+        )
+    except Exception:
+        logger.exception("Ошибка создания объявления")
+        await callback.answer(
+            "Не удалось сохранить объявление.",
+            show_alert=True,
+        )
+        return
+
+    await state.clear()
+    await callback.answer("Объявление сохранено!")
+
+    if isinstance(callback.message, Message):
+        await callback.message.edit_reply_markup(
+            reply_markup=None
+        )
+        await callback.message.answer(
+            "✅ <b>Объявление создано!</b>\n\n"
+            f"Номер объявления: <b>#{listing_id}</b>\n"
+            "Статус: Активно."
+        )
+
     user_id = callback.from_user.id
 
     if user_id not in settings.admin_id_set:
@@ -401,25 +492,6 @@ async def cancel_listing(
         )
 
 
-@router.message(Command("cancel"))
-async def cancel_listing_creation(
-    message: Message,
-    state: FSMContext,
-) -> None:
-    current_state = await state.get_state()
-
-    if current_state is None:
-        await message.answer(
-            "Сейчас у вас нет активного создания объявления."
-        )
-        return
-
-    await state.clear()
-
-    await message.answer(
-        "❌ Создание объявления отменено.\n\n"
-        "Все введённые данные очищены."
-    )
 
 
 

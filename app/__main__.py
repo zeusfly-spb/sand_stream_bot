@@ -1,7 +1,9 @@
+
 import asyncio
 import logging
 
 from aiogram import Dispatcher
+from aiogram.fsm.storage.redis import RedisStorage
 
 from app.bot import create_bot
 from app.config import settings
@@ -16,13 +18,16 @@ async def main() -> None:
 
     # Инициализируем Django до загрузки обработчиков
     setup_django()
-    from app.handlers.listings import router as listings_router
 
-    # Импортируем обработчики после инициализации Django
+    from app.handlers.listings import router as listings_router
     from app.handlers.start import router as start_router
 
     bot = create_bot()
-    dp = Dispatcher()
+
+    # Подключаем Redis для хранения FSM
+    storage = RedisStorage.from_url(settings.redis_url)
+
+    dp = Dispatcher(storage=storage)
     dp.include_router(start_router)
     dp.include_router(listings_router)
 
@@ -30,6 +35,7 @@ async def main() -> None:
         await dp.start_polling(bot)
     finally:
         await bot.session.close()
+        await storage.close()
 
 
 if __name__ == "__main__":
