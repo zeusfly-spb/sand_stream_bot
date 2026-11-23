@@ -200,3 +200,209 @@ html[data-theme="dark"] .module h2 {
         padding: 14px;
     }
 }
+
+
+/* =========================================
+   SandStreamBot — Sidebar Navigation
+   ========================================= */
+
+/* Боковая панель */
+#nav-sidebar {
+    background: var(--ssb-navy);
+    border-right: 1px solid var(--ssb-navy-dark);
+}
+
+/* Поиск по меню */
+#nav-sidebar #nav-filter {
+    background: #24485E;
+    color: #FFFFFF;
+    border: 1px solid #426176;
+    border-radius: 6px;
+    margin: 10px;
+    width: calc(100% - 20px);
+    box-sizing: border-box;
+}
+
+#nav-sidebar #nav-filter::placeholder {
+    color: #C2D0DA;
+}
+
+/* Заголовки приложений */
+#nav-sidebar .module caption,
+#nav-sidebar .module caption a {
+    background: var(--ssb-navy-dark);
+    color: #FFFFFF !important;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+#nav-sidebar .module caption {
+    border-bottom: 1px solid #34566B;
+}
+
+/* Пункты меню */
+#nav-sidebar .module th,
+#nav-sidebar .module td {
+    background: transparent;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+#nav-sidebar .module th a,
+#nav-sidebar .module td a {
+    color: #DCE7EF !important;
+    display: inline-block;
+    padding: 8px 10px;
+    text-decoration: none;
+}
+
+/* Наведение */
+#nav-sidebar .module tr:hover th,
+#nav-sidebar .module tr:hover td {
+    background: #24485E;
+}
+
+#nav-sidebar .module tr:hover a {
+    color: #FFFFFF !important;
+}
+
+/* Активный раздел */
+#nav-sidebar .current-model th,
+#nav-sidebar .current-model td {
+    background: #31546A;
+}
+
+#nav-sidebar .current-model th {
+    border-left: 4px solid var(--ssb-orange);
+}
+
+#nav-sidebar .current-model a {
+    color: #FFFFFF !important;
+    font-weight: 700;
+}
+
+/* Кнопки добавления в меню */
+#nav-sidebar .addlink {
+    color: #FFAD70 !important;
+}
+
+#nav-sidebar .addlink:hover {
+    color: #FFFFFF !important;
+}
+
+/* Кнопки изменения */
+#nav-sidebar .changelink {
+    color: #DCE7EF !important;
+}
+
+/* Разделитель меню */
+#nav-sidebar .module {
+    border: none;
+    border-radius: 6px;
+    margin: 0 8px 12px;
+    overflow: hidden;
+    box-shadow: none;
+}
+
+/* Скрытый поиск при свёрнутом меню */
+#nav-sidebar input {
+    color-scheme: dark;
+}
+
+/* Тёмная тема */
+html[data-theme="dark"] #nav-sidebar {
+    background: #102A3B;
+}
+
+html[data-theme="dark"] #nav-sidebar .module th,
+html[data-theme="dark"] #nav-sidebar .module td {
+    background: transparent;
+}
+
+html[data-theme="dark"] #nav-sidebar .module tr:hover th,
+html[data-theme="dark"] #nav-sidebar .module tr:hover td {
+    background: #24485E;
+}
+
+/* Мобильная версия */
+@media (max-width: 767px) {
+    #nav-sidebar {
+        border-right: none;
+    }
+
+    #nav-sidebar .module {
+        margin-left: 6px;
+        margin-right: 6px;
+    }
+}
+
+/* =========================================
+   SandStreamBot — Sidebar Contrast Fix
+   ========================================= */
+
+/* Фон всех строк меню */
+#nav-sidebar .module table,
+#nav-sidebar .module tbody,
+#nav-sidebar .module tr,
+#nav-sidebar .module th,
+#nav-sidebar .module td {
+    background-color: #17384D !important;
+    color: #FFFFFF !important;
+}
+
+/* Обычные названия разделов */
+#nav-sidebar .module th a,
+#nav-sidebar .module td a,
+#nav-sidebar .module a:link,
+#nav-sidebar .module a:visited {
+    color: #FFFFFF !important;
+    font-weight: 600;
+}
+
+/* Кнопки добавления */
+#nav-sidebar .module a.addlink,
+#nav-sidebar .module a.addlink:link,
+#nav-sidebar .module a.addlink:visited {
+    color: #FFAD70 !important;
+    font-weight: 700;
+}
+
+/* Кнопки изменения */
+#nav-sidebar .module a.changelink,
+#nav-sidebar .module a.changelink:link,
+#nav-sidebar .module a.changelink:visited {
+    color: #FFFFFF !important;
+    font-weight: 600;
+}
+
+/* Наведение */
+#nav-sidebar .module tr:hover,
+#nav-sidebar .module tr:hover th,
+#nav-sidebar .module tr:hover td {
+    background-color: #31546A !important;
+}
+
+/* Активный пункт */
+#nav-sidebar .module .current-model,
+#nav-sidebar .module .current-model th,
+#nav-sidebar .module .current-model td {
+    background-color: #31546A !important;
+}
+
+#nav-sidebar .module .current-model th {
+    border-left: 4px solid #E97828;
+}
+
+/* Заголовки групп */
+#nav-sidebar .module caption,
+#nav-sidebar .module caption a {
+    background-color: #102A3B !important;
+    color: #FFFFFF !important;
+}
+
+/* Светлая и тёмная темы */
+html[data-theme="light"] #nav-sidebar .module table,
+html[data-theme="dark"] #nav-sidebar .module table {
+    background-color: #17384D !important;
+}
+
