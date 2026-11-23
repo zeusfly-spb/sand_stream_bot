@@ -7,8 +7,9 @@ from aiogram.types import Message
 from app.config import settings
 from app.keyboards.main_menu import main_menu_keyboard
 from app.keyboards.search import ANY_CITY, ANY_MATERIAL, BACK, city_keyboard, material_keyboard
-from app.services.search import find_city, find_material, search_listings
+from app.services.search import find_city, find_material
 from app.states.search import SearchForm
+from app.handlers.catalog import show_catalog_page
 
 MENU_BUTTONS = ("🔎 Найти материалы", "➕ Добавить объявление", "ℹ️ Помощь")
 
@@ -94,7 +95,16 @@ async def process_search_city(message: Message, state: FSMContext) -> None:
         city_id = city.id
         chosen_city = escape(city.name)
 
-    results = await search_listings(material_id, city_id)
+    # results = await search_listings(material_id, city_id)
+
+    await state.update_data(city_id=city_id)
+
+    await show_catalog_page(
+        message=message,
+        state=state,
+        page=0,
+    )
+
 
     await state.clear()
 

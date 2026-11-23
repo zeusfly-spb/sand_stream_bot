@@ -22,6 +22,7 @@ async def main() -> None:
     from app.handlers.listings import router as listings_router
     from app.handlers.search import router as search_router
     from app.handlers.start import router as start_router
+    from app.handlers.catalog import router as catalog_router
 
     bot = create_bot()
 
@@ -31,6 +32,7 @@ async def main() -> None:
     dp = Dispatcher(storage=storage)
     dp.include_router(start_router)
     dp.include_router(listings_router)
+    dp.include_router(catalog_router)
     dp.include_router(search_router)
     
     try:
