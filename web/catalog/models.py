@@ -11,8 +11,8 @@ class MaterialType(models.Model):
     is_active = models.BooleanField("активен", default=True)
 
     class Meta:
-        verbose_name = "тип материала"
-        verbose_name_plural = "типы материалов"
+        verbose_name = "материал"
+        verbose_name_plural = "Материалы"
         ordering = ("name",)
 
     def __str__(self) -> str:
@@ -34,7 +34,7 @@ class City(models.Model):
 
     class Meta:
         verbose_name = "населённый пункт"
-        verbose_name_plural = "населённые пункты"
+        verbose_name_plural = "Города и районы"
         ordering = ("name",)
         unique_together = ("name", "region")
 
@@ -107,7 +107,7 @@ class Listing(models.Model):
 
     class Meta:
         verbose_name = "объявление"
-        verbose_name_plural = "объявления"
+        verbose_name_plural = "Объявления"
         ordering = ("-created_at",)
 
     def __str__(self) -> str:
@@ -129,8 +129,8 @@ class ListingPhoto(models.Model):
     created_at = models.DateTimeField("добавлено", auto_now_add=True)
 
     class Meta:
-        verbose_name = "фото объявления"
-        verbose_name_plural = "фотографии объявлений"
+        verbose_name = "фотография"
+        verbose_name_plural = "Фотографии"
         ordering = ("position",)
 
     def __str__(self) -> str:
@@ -163,7 +163,7 @@ class Subscription(models.Model):
 
     class Meta:
         verbose_name = "подписка"
-        verbose_name_plural = "подписки"
+        verbose_name_plural = "Подписки"
         ordering = ("-created_at",)
         unique_together = ("subscriber", "material_type", "city")
 
@@ -202,7 +202,7 @@ class Notification(models.Model):
 
     class Meta:
         verbose_name = "уведомление"
-        verbose_name_plural = "уведомления"
+        verbose_name_plural = "Уведомления"
         ordering = ("-created_at",)
 
     def __str__(self) -> str:

@@ -2,13 +2,25 @@
 {% extends "admin/base.html" %}
 {% load static %}
 
-{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+{% block title %}
+    {% if subtitle %}{{ subtitle }} | {% endif %}
+    {{ title }} | SandStreamBot
+{% endblock %}
 
 {% block branding %}
-<div id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Django administration') }}</a></div>
-{% if user.is_anonymous %}
-  {% include "admin/color_theme_toggle.html" %}
-{% endif %}
+<div id="site-name" class="ssb-brand">
+    <a href="{% url 'admin:index' %}" class="ssb-brand__link">
+        <img
+            src="{% static 'catalog/img/ssb-logo.jpg' %}"
+            alt="SandStreamBot"
+            class="ssb-brand__logo"
+        >
+        <span class="ssb-brand__text">
+            <strong>SandStreamBot</strong>
+            <small>Панель управления</small>
+        </span>
+    </a>
+</div>
 {% endblock %}
 
 {% block nav-global %}{% endblock %}

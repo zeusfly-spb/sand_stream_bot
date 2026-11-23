@@ -1,3 +1,202 @@
+
+/* =========================================
+   SandStreamBot — Industrial Pro
+   ========================================= */
+
+   :root {
+    --ssb-navy: #17384D;
+    --ssb-navy-dark: #102A3B;
+    --ssb-orange: #E97828;
+    --ssb-gray: #89949E;
+}
+
+/* Основной фон */
+body {
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+/* Верхняя панель */
+#header {
+    background: var(--ssb-navy);
+    color: #fff;
+    border-bottom: 3px solid var(--ssb-orange);
+    padding: 12px 24px;
+}
+
+/* Логотип и название */
+.ssb-brand {
+    display: flex;
+    align-items: center;
+}
+
+.ssb-brand__link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #fff !important;
+    text-decoration: none;
+}
+
+.ssb-brand__logo {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.ssb-brand__text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.ssb-brand__text strong {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.ssb-brand__text small {
+    font-size: 11px;
+    color: #D5E0E8;
+    font-weight: 400;
+}
+
+/* Ссылки верхней панели */
+#header a:link,
+#header a:visited {
+    color: #fff;
+}
+
+#header a:hover {
+    color: #FFD0A8;
+}
+
+/* Основная область */
+#content {
+    padding: 24px;
+}
+
+/* Заголовки */
+#content h1 {
+    color: var(--ssb-navy);
+    font-weight: 700;
+}
+
+/* Кнопки */
+.button,
+input[type="submit"],
+input[type="button"],
+.submit-row input,
+a.button {
+    background: var(--ssb-navy);
+    border-radius: 6px;
+    border: none;
+    padding: 9px 16px;
+    transition: background 0.2s ease;
+}
+
+.button:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover,
+.submit-row input:hover,
+a.button:hover {
+    background: var(--ssb-orange);
+}
+
+/* Главная кнопка добавления */
+.object-tools a.addlink {
+    background: var(--ssb-orange);
+    border-radius: 6px;
+    padding: 8px 14px;
+}
+
+.object-tools a.addlink:hover {
+    background: #D4661D;
+}
+
+/* Таблицы */
+#changelist table {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#changelist table thead th {
+    background: #E9EEF2;
+    color: var(--ssb-navy);
+    font-weight: 700;
+}
+
+#changelist tbody tr:hover {
+    background: #FFF4EB;
+}
+
+/* Фильтры */
+#changelist-filter h2 {
+    background: var(--ssb-navy);
+    color: #fff;
+}
+
+#changelist-filter li.selected a {
+    color: var(--ssb-orange);
+    font-weight: 700;
+}
+
+/* Карточки приложений на главной */
+.module {
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.module caption,
+.module h2 {
+    background: var(--ssb-navy);
+    color: #fff;
+    font-weight: 700;
+}
+
+/* Исправление расположения списка */
 #changelist .changelist-form-container:not(:has(#changelist-filter)) {
     flex-direction: column;
+}
+
+/* Тёмная тема Django */
+html[data-theme="dark"] #content h1 {
+    color: #E5EDF3;
+}
+
+html[data-theme="dark"] #changelist table thead th {
+    background: #263B4B;
+    color: #E5EDF3;
+}
+
+html[data-theme="dark"] #changelist tbody tr:hover {
+    background: #263B4B;
+}
+
+html[data-theme="dark"] .module caption,
+html[data-theme="dark"] .module h2 {
+    background: var(--ssb-navy-dark);
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 767px) {
+    #header {
+        padding: 10px 14px;
+    }
+
+    .ssb-brand__logo {
+        width: 40px;
+        height: 40px;
+    }
+
+    .ssb-brand__text strong {
+        font-size: 17px;
+    }
+
+    #content {
+        padding: 14px;
+    }
 }
