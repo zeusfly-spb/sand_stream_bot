@@ -1,19 +1,22 @@
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
 from app.config import settings
 from app.states.listing import ListingForm
 
 from decimal import Decimal, InvalidOperation
 from aiogram.types import CallbackQuery
-from app.keyboards.listings import listing_confirmation_keyboard
+from app.keyboards.listings import (
+    listing_confirmation_keyboard,
+    quantity_unit_keyboard,
+    QUANTITY_UNITS,
+)
 
 from html import escape
 from aiogram.filters import Command
-from app.services.listings import create_listing
-
+from app.services.listings import create_listing, UNIT_LABELS
 import logging
 logger = logging.getLogger(__name__)
 
@@ -179,33 +182,26 @@ async def process_quantity(
 
     await message.answer(
         "Шаг 5 из 9.\n"
-        "Выберите единицу измерения:\n\n"
-        "Введите «м3» для кубических метров "
-        "или «тонн» для тонн."
+        "Выберите единицу измерения материала:",
+        reply_markup=quantity_unit_keyboard(),
     )
 
 
 @router.message(ListingForm.unit)
-async def process_unit(
-    message: Message,
-    state: FSMContext,
-) -> None:
+async def process_unit(message: Message, state: FSMContext) -> None:
     if not message.text:
-        await message.answer("Введите единицу измерения: м3 или тонн.")
+        await message.answer(
+            "Выберите единицу измерения:",
+            reply_markup=quantity_unit_keyboard(),
+        )
         return
 
-    unit = message.text.strip().lower().replace("³", "3")
+    unit_value = QUANTITY_UNITS.get(message.text.strip())
 
-    if unit in ("м3", "м³", "m3"):
-        unit_value = "m3"
-        unit_label = "м³"
-    elif unit in ("тонна", "тонны", "тонн", "т", "t"):
-        unit_value = "ton"
-        unit_label = "т"
-    else:
+    if not unit_value:
         await message.answer(
-            "Не понял единицу измерения.\n"
-            "Введите «м3» или «тонн»."
+            "Пожалуйста, выберите единицу измерения кнопкой ниже.",
+            reply_markup=quantity_unit_keyboard(),
         )
         return
 
@@ -213,13 +209,13 @@ async def process_unit(
     await state.set_state(ListingForm.price)
 
     await message.answer(
-        f"Единица измерения: {unit_label}.\n\n"
+        f"Единица измерения: {message.text.strip()}.\n\n"
         "Шаг 6 из 9.\n"
-        f"Укажите цену за 1 {unit_label} в рублях.\n\n"
+        f"Укажите цену за 1 {message.text.strip().lower()} в рублях.\n\n"
         "Например: 850.\n"
-        "Введите 0, если материал отдаётся бесплатно."
+        "Введите 0, если материал отдаётся бесплатно.",
+        reply_markup=ReplyKeyboardRemove(),
     )
-
 
 @router.message(ListingForm.price)
 async def process_price(
@@ -257,7 +253,8 @@ async def process_price(
     await state.update_data(price=str(price))
     await state.set_state(ListingForm.city)
 
-    unit_label = "м³" if (await state.get_data()).get("unit") == "m3" else "т"
+    data = await state.get_data()
+    unit_label = UNIT_LABELS[data["unit"]]
 
     price_text = (
         "Бесплатно"
@@ -331,7 +328,7 @@ async def process_address(
     city = escape(data.get("city", "—"))
     address_text = escape(address or "Не указан")
 
-    unit = "м³" if data.get("unit") == "m3" else "т"
+    unit = UNIT_LABELS[data["unit"]]
 
     price_value = data.get("price", "0")
     price = (

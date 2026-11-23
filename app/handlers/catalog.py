@@ -53,25 +53,45 @@ async def show_listing_detail(
         else listing.city_raw or "Не указан"
     )
 
-    price = (
-        "Бесплатно"
-        if listing.price == 0
-        else f"{listing.price} ₽ {listing.price_unit}"
-        if listing.price is not None
-        else "Цена не указана"
-    )
+    if listing.price == 0:
+        price = "Бесплатно"
+    elif listing.price is not None:
+        price_value = f"{listing.price:,.2f}".replace(",", " ")
+        price_unit = listing.price_unit.strip()
+
+        if price_unit.lower().startswith("за "):
+            price_unit = price_unit[3:]
+
+        price = f"{price_value} ₽"
+        if price_unit:
+            price += f" / {price_unit}"
+    else:
+        price = "Цена не указана"
+    
+    if listing.contact_phone:
+        phone = (
+            f'<a href="tel:{escape(listing.contact_phone, quote=True)}">'
+            f'{escape(listing.contact_phone)}</a>'
+        )
+    else:
+        phone = "Не указан"
+    
+    quantity = listing.quantity or "Не указано"
+    if listing.quantity_unit:
+        quantity += f" {listing.quantity_unit}"
 
     text = (
         f"<b>{escape(listing.title)}</b>\n\n"
         f"🪨 Материал: {escape(material)}\n"
         f"📍 Город: {escape(city)}\n"
-        f"📦 Количество: {escape(listing.quantity or 'Не указано')}\n"
+        f"📦 Количество: {escape(quantity)}\n"
         f"💰 Цена: {escape(price)}\n\n"
         f"<b>Описание:</b>\n"
         f"{escape(listing.description or 'Описание отсутствует')}\n\n"
         f"📌 Адрес: {escape(listing.address or 'Не указан')}\n"
         f"👤 Продавец: {escape(listing.contact_name or 'Не указан')}\n"
-        f"📞 Телефон: {escape(listing.contact_phone or 'Не указан')}"
+        f"👤 Продавец: {escape(listing.contact_name or 'Не указан')}\n"
+        f"📞 Телефон: {phone}"
     )
 
     data = await state.get_data()

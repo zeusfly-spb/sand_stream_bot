@@ -9,8 +9,13 @@ from django.utils.text import slugify
 from accounts.models import TelegramUser
 from catalog.models import City, Listing, MaterialType
 
-UNIT_LABELS = {"m3": "м³", "ton": "т"}
-
+UNIT_LABELS = {
+    "m3": "м³",
+    "ton": "т",
+    "kg": "кг",
+    "bag": "меш.",
+    "pcs": "шт.",
+}
 
 def _slug_for(name: str) -> str:
     base = slugify(name, allow_unicode=True) or "material"
@@ -54,9 +59,10 @@ def _create_listing(data: dict, telegram_user_data: dict) -> str:
             title=data["title"],
             description=data.get("description", ""),
             address=data.get("address", ""),
-            quantity=f"{data['quantity']} {unit_label}",
+            quantity=data["quantity"],
             price=Decimal(data["price"]),
             price_unit=f"за {unit_label}",
+            quantity_unit=unit_label,
             status=Listing.Status.ACTIVE,
             contact_name=telegram_user.first_name or "",
             contact_phone=telegram_user.phone or "",

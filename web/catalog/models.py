@@ -91,6 +91,12 @@ class Listing(models.Model):
         "единица цены", max_length=20, blank=True, default=""
     )  # "за м3", "за тонну"
     quantity = models.CharField("объём/количество", max_length=100, blank=True)
+    quantity_unit = models.CharField(
+        "единица измерения",
+        max_length=20,
+        blank=True,
+        default="",
+    )
 
     status = models.CharField(
         "статус", max_length=20, choices=Status.choices, default=Status.DRAFT
