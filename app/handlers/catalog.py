@@ -3,12 +3,14 @@ from uuid import UUID
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 
 from app.keyboards.catalog import (
     catalog_keyboard,
+    catalog_sort_keyboard,
     listing_detail_keyboard,
 )
+
 from app.services.search import (
     get_listing_by_id,
     get_listings_page,
@@ -82,9 +84,6 @@ async def show_listing_detail(
     await callback.answer()
 
 
-from aiogram.types import InlineKeyboardMarkup
-
-
 async def show_catalog_page(
     message: Message,
     state: FSMContext,
@@ -95,11 +94,13 @@ async def show_catalog_page(
 
     material_id = data.get("material_id")
     city_id = data.get("city_id")
+    sort_by = data.get("sort_by", "newest")
 
     listings, has_next = await get_listings_page(
         material_id=material_id,
         city_id=city_id,
         page=page,
+        sort_by=sort_by,
     )
 
     if not listings:
@@ -143,7 +144,15 @@ async def show_catalog_page(
         lines.append("")
 
     text = "\n".join(lines)
-    keyboard = catalog_keyboard(listings, page, has_next)
+    listing_keyboard = catalog_keyboard(listings, page, has_next)
+    sort_keyboard = catalog_sort_keyboard(sort_by)
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            *listing_keyboard.inline_keyboard,
+            *sort_keyboard.inline_keyboard,
+        ]
+    )
 
     if edit:
         await message.edit_text(
@@ -188,5 +197,50 @@ async def change_catalog_page(
         edit=True,
     )
     await callback.answer()
+
+
+@router.callback_query(F.data.startswith("catalog:sort:"))
+async def change_catalog_sort(
+    callback: CallbackQuery,
+    state: FSMContext,
+) -> None:
+    sort_by = callback.data.split(":")[-1]
+
+    allowed_sorts = {
+        "newest",
+        "price_asc",
+        "price_desc",
+    }
+
+    if sort_by not in allowed_sorts:
+        await callback.answer(
+            "Неизвестный способ сортировки.",
+            show_alert=True,
+        )
+        return
+
+    data = await state.get_data()
+
+    if "material_id" not in data or "city_id" not in data:
+        await callback.answer(
+            "Поиск устарел. Начните новый поиск.",
+            show_alert=True,
+        )
+        return
+
+    await state.update_data(
+        sort_by=sort_by,
+        catalog_page=0,
+    )
+
+    await show_catalog_page(
+        callback.message,
+        state,
+        page=0,
+        edit=True,
+    )
+
+    await callback.answer("Сортировка изменена.")
+
 
 

@@ -6,7 +6,17 @@ from aiogram.types import Message
 
 from app.config import settings
 from app.keyboards.main_menu import main_menu_keyboard
-from app.keyboards.search import ANY_CITY, ANY_MATERIAL, BACK, city_keyboard, material_keyboard
+from app.keyboards.search import (
+    ALL_PRICES,
+    ANY_CITY,
+    ANY_MATERIAL,
+    BACK,
+    FREE_ONLY,
+    PAID_ONLY,
+    city_keyboard,
+    material_keyboard,
+    price_type_keyboard,
+)
 from app.services.search import find_city, find_material
 from app.states.search import SearchForm
 from app.handlers.catalog import show_catalog_page
@@ -29,6 +39,10 @@ async def _back_to_menu(message: Message, state: FSMContext) -> None:
 @router.message(F.text == "🔎 Найти материалы")
 async def start_search(message: Message, state: FSMContext) -> None:
     await state.set_state(SearchForm.material)
+    await state.update_data(
+        sort_by="newest",
+        catalog_page=0,
+    )
     await message.answer(
         "🔎 <b>Поиск материалов</b>\n\n"
         "Шаг 1 из 2.\n"
@@ -96,6 +110,41 @@ async def process_search_city(
         city_id = city.id
 
     await state.update_data(city_id=city_id)
+    await state.set_state(SearchForm.price_type)
+
+    await message.answer(
+        "Город выбран.\n\n"
+        "Шаг 3 из 3.\n"
+        "Выберите тип стоимости:",
+        reply_markup=price_type_keyboard(),
+    )
+
+
+@router.message(SearchForm.price_type, F.text)
+async def process_search_price(
+    message: Message,
+    state: FSMContext,
+) -> None:
+    text = (message.text or "").strip()
+
+    if text == BACK or text in MENU_BUTTONS:
+        await _back_to_menu(message, state)
+        return
+
+    price_filters = {
+        ALL_PRICES: None,
+        FREE_ONLY: "free",
+        PAID_ONLY: "paid",
+    }
+
+    if text not in price_filters:
+        await message.answer(
+            "Выберите тип стоимости кнопкой.",
+            reply_markup=price_type_keyboard(),
+        )
+        return
+
+    await state.update_data(price_type=price_filters[text])
 
     await show_catalog_page(
         message=message,
@@ -112,3 +161,4 @@ async def process_search_city(
             user_id in settings.admin_id_set
         ),
     )
+

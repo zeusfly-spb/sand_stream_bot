@@ -65,3 +65,24 @@ def listing_detail_keyboard(page: int) -> InlineKeyboardMarkup:
             ]
         ]
     )
+
+
+def catalog_sort_keyboard(current_sort: str = "newest") -> InlineKeyboardMarkup:
+    options = [
+        ("🆕 Сначала новые", "newest"),
+        ("💰 Сначала дешевле", "price_asc"),
+        ("💎 Сначала дороже", "price_desc"),
+    ]
+
+    keyboard = []
+
+    for title, sort_value in options:
+        prefix = "✅ " if sort_value == current_sort else ""
+        keyboard.append([
+            InlineKeyboardButton(
+                text=f"{prefix}{title}",
+                callback_data=f"catalog:sort:{sort_value}",
+            )
+        ])
+
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)

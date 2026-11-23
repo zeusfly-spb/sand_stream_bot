@@ -36,3 +36,18 @@ def city_keyboard() -> ReplyKeyboardMarkup:
         .values_list("name", flat=True)
     )
     return _build([ANY_CITY] + names + [BACK])
+
+
+ALL_PRICES = "💰 Все объявления"
+FREE_ONLY = "🆓 Только бесплатные"
+PAID_ONLY = "💵 Только платные"
+
+
+def price_type_keyboard() -> ReplyKeyboardMarkup:
+    return _build([
+        ALL_PRICES,
+        FREE_ONLY,
+        PAID_ONLY,
+        BACK,
+    ])
+
