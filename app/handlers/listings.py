@@ -7,10 +7,10 @@ from app.config import settings
 from app.states.listing import ListingForm
 
 from decimal import Decimal, InvalidOperation
-from aiogram.types import CallbackQuery
 from app.keyboards.listings import (
     listing_confirmation_keyboard,
     quantity_unit_keyboard,
+    location_keyboard,
     QUANTITY_UNITS,
 )
 
@@ -23,6 +23,56 @@ logger = logging.getLogger(__name__)
 
 
 router = Router()
+async def show_listing_preview(
+    message: Message,
+    state: FSMContext,
+) -> None:
+    data = await state.get_data()
+
+    material = escape(data.get("material_name", "—"))
+    title = escape(data.get("title", "—"))
+    description = escape(data.get("description") or "Не указано")
+    quantity = escape(data.get("quantity", "—"))
+    city = escape(data.get("city", "—"))
+    address = escape(data.get("address") or "Не указан")
+
+    unit = UNIT_LABELS[data["unit"]]
+
+    price_value = data.get("price", "0")
+    price = (
+        "Бесплатно"
+        if Decimal(price_value) == 0
+        else f"{escape(price_value)} руб. за {unit}"
+    )
+
+    latitude = data.get("latitude")
+    longitude = data.get("longitude")
+
+    location_text = (
+        "Получена"
+        if latitude is not None and longitude is not None
+        else "Не указана"
+    )
+
+    preview = (
+        "📋 <b>Шаг 10 из 10. Проверьте объявление</b>\n\n"
+        f"🪨 <b>Материал:</b> {material}\n"
+        f"📝 <b>Заголовок:</b> {title}\n"
+        f"📄 <b>Описание:</b> {description}\n"
+        f"📦 <b>Количество:</b> {quantity} {unit}\n"
+        f"💰 <b>Цена:</b> {price}\n"
+        f"📍 <b>Город:</b> {city}\n"
+        f"🏠 <b>Адрес:</b> {address}\n"
+        f"🌍 <b>Геопозиция:</b> {location_text}\n\n"
+        "Всё верно? Подтвердите объявление."
+    )
+
+    await state.set_state(ListingForm.confirmation)
+
+    await message.answer(
+        preview,
+        reply_markup=listing_confirmation_keyboard(),
+    )
 
 @router.message(Command("cancel"))
 async def cancel_listing_creation(
@@ -41,10 +91,9 @@ async def cancel_listing_creation(
 
     await message.answer(
         "❌ Создание объявления отменено.\n\n"
-        "Все введённые данные очищены."
+        "Все введённые данные очищены.",
+        reply_markup=ReplyKeyboardRemove(),
     )
-
-
 
 @router.message(F.text == "➕ Добавить объявление")
 async def start_listing(
@@ -73,7 +122,7 @@ async def start_listing(
 
     await message.answer(
         "➕ <b>Новое объявление</b>\n\n"
-        "Шаг 1 из 9.\n"
+        "Шаг 1 из 10.\n"
         "Введите название материала:\n\n"
         "Например: песок карьерный, щебень гранитный."
     )
@@ -94,7 +143,7 @@ async def process_material(
     await state.set_state(ListingForm.title)
 
     await message.answer(
-        "Шаг 2 из 9.\n"
+        "Шаг 2 из 10.\n"
         "Введите заголовок объявления:\n\n"
         "Например: Продам 20 м³ карьерного песка."
     )
@@ -113,7 +162,7 @@ async def process_title(
     await state.set_state(ListingForm.description)
 
     await message.answer(
-        "Шаг 3 из 9.\n"
+        "Шаг 3 из 10.\n"
         "Введите описание объявления:\n\n"
         "Например: Чистый карьерный песок, без примесей. "
         "Самовывоз или доставка."
@@ -138,7 +187,7 @@ async def process_description(
     await state.set_state(ListingForm.quantity)
 
     await message.answer(
-        "Шаг 4 из 9.\n"
+        "Шаг 4 из 10.\n"
         "Укажите количество материала:\n\n"
         "Например: 20 или 15.5"
     )
@@ -181,7 +230,7 @@ async def process_quantity(
     await state.set_state(ListingForm.unit)
 
     await message.answer(
-        "Шаг 5 из 9.\n"
+        "Шаг 5 из 10.\n"
         "Выберите единицу измерения материала:",
         reply_markup=quantity_unit_keyboard(),
     )
@@ -210,7 +259,7 @@ async def process_unit(message: Message, state: FSMContext) -> None:
 
     await message.answer(
         f"Единица измерения: {message.text.strip()}.\n\n"
-        "Шаг 6 из 9.\n"
+        "Шаг 6 из 10.\n"
         f"Укажите цену за 1 {message.text.strip().lower()} в рублях.\n\n"
         "Например: 850.\n"
         "Введите 0, если материал отдаётся бесплатно.",
@@ -264,7 +313,7 @@ async def process_price(
 
     await message.answer(
         f"Цена: {price_text}.\n\n"
-        "Шаг 7 из 9.\n"
+        "Шаг 7 из 10.\n"
         "Укажите город или населённый пункт:\n\n"
         "Например: Санкт-Петербург или Всеволожск."
     )
@@ -289,7 +338,7 @@ async def process_city(
     await state.set_state(ListingForm.address)
 
     await message.answer(
-        "Шаг 8 из 9.\n"
+        "Шаг 8 из 10.\n"
         "Укажите адрес или местоположение материала.\n\n"
         "Например: улица Промышленная, участок 15.\n\n"
         "Если адрес неизвестен, отправьте дефис (-)."
@@ -319,42 +368,52 @@ async def process_address(
 
     await state.update_data(address=address)
 
-    data = await state.get_data()
-
-    material = escape(data.get("material_name", "—"))
-    title = escape(data.get("title", "—"))
-    description = escape(data.get("description") or "Не указано")
-    quantity = escape(data.get("quantity", "—"))
-    city = escape(data.get("city", "—"))
-    address_text = escape(address or "Не указан")
-
-    unit = UNIT_LABELS[data["unit"]]
-
-    price_value = data.get("price", "0")
-    price = (
-        "Бесплатно"
-        if Decimal(price_value) == 0
-        else f"{escape(price_value)} руб. за {unit}"
+    await state.set_state(ListingForm.location)
+    await message.answer(
+        "Шаг 9 из 10.\n"
+        "Отправьте геопозицию места, где находится материал.\n\n"
+        "Нажмите кнопку «📍 Отправить геопозицию» "
+        "или выберите «Пропустить», если координаты неизвестны.",
+        reply_markup=location_keyboard(),
     )
+    return
 
-    preview = (
-        "📋 <b>Шаг 9 из 9. Проверьте объявление</b>\n\n"
-        f"🪨 <b>Материал:</b> {material}\n"
-        f"📝 <b>Заголовок:</b> {title}\n"
-        f"📄 <b>Описание:</b> {description}\n"
-        f"📦 <b>Количество:</b> {quantity} {unit}\n"
-        f"💰 <b>Цена:</b> {price}\n"
-        f"📍 <b>Город:</b> {city}\n"
-        f"🏠 <b>Адрес:</b> {address_text}\n\n"
-        "Всё верно? Подтвердите объявление."
+@router.message(ListingForm.location, F.text == "Пропустить")
+async def skip_listing_location(
+    message: Message,
+    state: FSMContext,
+) -> None:
+    await state.update_data(
+        latitude=None,
+        longitude=None,
     )
-
-    await state.set_state(ListingForm.confirmation)
 
     await message.answer(
-        preview,
-        reply_markup=listing_confirmation_keyboard(),
+        "Геопозиция пропущена.",
+        reply_markup=ReplyKeyboardRemove(),
     )
+
+    await show_listing_preview(message, state)
+    
+@router.message(ListingForm.location, F.location)
+async def process_listing_location(
+    message: Message,
+    state: FSMContext,
+) -> None:
+    if not message.location:
+        return
+
+    await state.update_data(
+        latitude=message.location.latitude,
+        longitude=message.location.longitude,
+    )
+
+    await message.answer(
+        "✅ Геопозиция получена!",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+    await show_listing_preview(message, state)
 
 @router.callback_query(
     ListingForm.confirmation,

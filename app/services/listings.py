@@ -59,6 +59,8 @@ def _create_listing(data: dict, telegram_user_data: dict) -> str:
             title=data["title"],
             description=data.get("description", ""),
             address=data.get("address", ""),
+            latitude=data.get("latitude"),
+            longitude=data.get("longitude"),
             quantity=data["quantity"],
             price=Decimal(data["price"]),
             price_unit=f"за {unit_label}",

@@ -104,6 +104,21 @@ class Listing(models.Model):
 
     contact_name = models.CharField("имя контактного лица", max_length=100, blank=True)
     address = models.CharField("адрес", max_length=255, blank=True)
+    latitude = models.DecimalField(
+        "широта",
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+    )
+
+    longitude = models.DecimalField(
+        "долгота",
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+    )
 
     contact_phone = models.CharField("телефон", max_length=32, blank=True)
 

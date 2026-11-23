@@ -1,6 +1,5 @@
 
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 
 
 QUANTITY_UNITS = {
@@ -39,4 +38,19 @@ def listing_confirmation_keyboard() -> InlineKeyboardMarkup:
                 ),
             ],
         ]
+    )
+
+def location_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(
+                    text="📍 Отправить геопозицию",
+                    request_location=True,
+                )
+            ],
+            [KeyboardButton(text="Пропустить")],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True,
     )
