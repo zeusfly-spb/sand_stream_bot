@@ -95,12 +95,14 @@ async def show_catalog_page(
     material_id = data.get("material_id")
     city_id = data.get("city_id")
     sort_by = data.get("sort_by", "newest")
+    price_type = data.get("price_type")
 
     listings, has_next = await get_listings_page(
         material_id=material_id,
         city_id=city_id,
         page=page,
         sort_by=sort_by,
+        price_type=price_type,
     )
 
     if not listings:
