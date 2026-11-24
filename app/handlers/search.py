@@ -16,6 +16,9 @@ from app.keyboards.search import (
     city_keyboard,
     material_keyboard,
     price_type_keyboard,
+    SEARCH_BY_CITY,
+    SEARCH_NEARBY,
+    search_mode_keyboard,
 )
 from app.services.search import find_city, find_material
 from app.states.search import SearchForm
@@ -38,14 +41,42 @@ async def _back_to_menu(message: Message, state: FSMContext) -> None:
 
 @router.message(F.text == "🔎 Найти материалы")
 async def start_search(message: Message, state: FSMContext) -> None:
-    await state.set_state(SearchForm.material)
+    await state.set_state(SearchForm.mode)
     await state.update_data(
         sort_by="newest",
         catalog_page=0,
     )
+
     await message.answer(
-        "🔎 <b>Поиск материалов</b>\n\n"
-        "Шаг 1 из 2.\n"
+        "🔎 <b>Поиск строительных материалов</b>\n\n"
+        "Как будем искать предложения?",
+        reply_markup=search_mode_keyboard(),
+    )
+
+@router.message(SearchForm.mode, F.text)
+async def process_search_mode(
+    message: Message,
+    state: FSMContext,
+) -> None:
+    text = (message.text or "").strip()
+
+    if text == BACK or text in MENU_BUTTONS:
+        await _back_to_menu(message, state)
+        return
+
+    if text not in (SEARCH_BY_CITY, SEARCH_NEARBY):
+        await message.answer(
+            "Выберите способ поиска кнопкой.",
+            reply_markup=search_mode_keyboard(),
+        )
+        return
+
+    mode = "city" if text == SEARCH_BY_CITY else "near_me"
+
+    await state.update_data(search_mode=mode)
+    await state.set_state(SearchForm.material)
+
+    await message.answer(
         "Выберите тип материала:",
         reply_markup=await material_keyboard(),
     )
@@ -161,4 +192,3 @@ async def process_search_price(
             user_id in settings.admin_id_set
         ),
     )
-

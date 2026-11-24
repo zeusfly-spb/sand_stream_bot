@@ -6,7 +6,16 @@ from catalog.models import City, MaterialType
 ANY_MATERIAL = "🪨 Любой материал"
 ANY_CITY = "🗺 Вся область"
 BACK = "🔙 В главное меню"
+SEARCH_BY_CITY = "🏙 Поиск по городу"
+SEARCH_NEARBY = "📍 Рядом со мной"
 
+GEO_RADII = {
+    "5 км": 5,
+    "10 км": 10,
+    "25 км": 25,
+    "50 км": 50,
+    "100 км": 100,
+}
 
 def _build(buttons: list[str]) -> ReplyKeyboardMarkup:
     rows = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]
@@ -48,6 +57,36 @@ def price_type_keyboard() -> ReplyKeyboardMarkup:
         ALL_PRICES,
         FREE_ONLY,
         PAID_ONLY,
+        BACK,
+    ])
+
+def search_mode_keyboard() -> ReplyKeyboardMarkup:
+    return _build([
+        SEARCH_BY_CITY,
+        SEARCH_NEARBY,
+        BACK,
+    ])
+
+
+def geo_location_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(
+                    text="📍 Отправить геолокацию",
+                    request_location=True,
+                )
+            ],
+            [KeyboardButton(text=BACK)],
+        ],
+        resize_keyboard=True,
+        input_field_placeholder="Отправьте свою геолокацию",
+    )
+
+
+def geo_radius_keyboard() -> ReplyKeyboardMarkup:
+    return _build([
+        *GEO_RADII.keys(),
         BACK,
     ])
 
