@@ -48,14 +48,21 @@ def _create_listing(data: dict, telegram_user_data: dict) -> str:
             defaults={"slug": _slug_for(data["material_name"])},
         )
 
-        city = City.objects.filter(name__iexact=data["city"]).first()
+        city = None
+        city_id = data.get("city_id")
+        if city_id is not None:
+            city = City.objects.filter(id=city_id, is_active=True).first()
+        if city is None and data.get("city"):
+            city = City.objects.filter(name__iexact=data["city"]).first()
+
+        city_raw = data.get("city") or (city.name if city else "")
 
         listing = Listing.objects.create(
             seller=telegram_user,
             material_type=material,
             material_raw=data["material_name"],
             city=city,
-            city_raw="" if city else data["city"],
+            city_raw=city_raw,
             title=data["title"],
             description=data.get("description", ""),
             address=data.get("address", ""),

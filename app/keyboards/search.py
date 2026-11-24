@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 from asgiref.sync import sync_to_async
 
@@ -17,6 +19,11 @@ GEO_RADII = {
     "100 км": 100,
 }
 
+ALL_PRICES = "💰 Все объявления"
+FREE_ONLY = "🆓 Только бесплатные"
+PAID_ONLY = "💵 Только платные"
+
+
 def _build(buttons: list[str]) -> ReplyKeyboardMarkup:
     rows = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]
     keyboard = [[KeyboardButton(text=b) for b in row] for row in rows]
@@ -27,29 +34,43 @@ def _build(buttons: list[str]) -> ReplyKeyboardMarkup:
     )
 
 
-@sync_to_async
-def material_keyboard() -> ReplyKeyboardMarkup:
-    names = list(
+@lru_cache(maxsize=1)
+def _active_material_names() -> tuple[str, ...]:
+    return tuple(
         MaterialType.objects.filter(is_active=True)
         .order_by("name")
         .values_list("name", flat=True)
     )
-    return _build([ANY_MATERIAL] + names + [BACK])
 
 
-@sync_to_async
-def city_keyboard() -> ReplyKeyboardMarkup:
-    names = list(
+@lru_cache(maxsize=1)
+def _active_city_names() -> tuple[str, ...]:
+    return tuple(
         City.objects.filter(is_active=True)
         .order_by("name")
         .values_list("name", flat=True)
     )
-    return _build([ANY_CITY] + names + [BACK])
 
 
-ALL_PRICES = "💰 Все объявления"
-FREE_ONLY = "🆓 Только бесплатные"
-PAID_ONLY = "💵 Только платные"
+def clear_directory_cache() -> None:
+    _active_material_names.cache_clear()
+    _active_city_names.cache_clear()
+
+
+@sync_to_async
+def material_keyboard() -> ReplyKeyboardMarkup:
+    return _build([ANY_MATERIAL, *_active_material_names(), BACK])
+
+
+@sync_to_async
+def city_keyboard() -> ReplyKeyboardMarkup:
+    return _build([ANY_CITY, *_active_city_names(), BACK])
+
+
+@sync_to_async
+def listing_city_keyboard() -> ReplyKeyboardMarkup:
+    """Клавиатура городов для создания объявления (без «Вся область»)."""
+    return _build([*_active_city_names(), BACK])
 
 
 def price_type_keyboard() -> ReplyKeyboardMarkup:
@@ -60,10 +81,11 @@ def price_type_keyboard() -> ReplyKeyboardMarkup:
         BACK,
     ])
 
+
 def search_mode_keyboard() -> ReplyKeyboardMarkup:
+    # «Рядом со мной» временно скрыто до готового geo-сервиса.
     return _build([
         SEARCH_BY_CITY,
-        SEARCH_NEARBY,
         BACK,
     ])
 
@@ -89,4 +111,3 @@ def geo_radius_keyboard() -> ReplyKeyboardMarkup:
         *GEO_RADII.keys(),
         BACK,
     ])
-
