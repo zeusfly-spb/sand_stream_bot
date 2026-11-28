@@ -16,7 +16,6 @@ def main_menu_keyboard(is_admin: bool) -> ReplyKeyboardMarkup:
 
     if is_admin:
         rows.append([KeyboardButton(text=ADD_LISTING)])
-        rows.append([KeyboardButton(text=MANAGE_LISTINGS)])
 
     return ReplyKeyboardMarkup(
         keyboard=rows,
