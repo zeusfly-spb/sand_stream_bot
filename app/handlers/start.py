@@ -17,7 +17,7 @@ router = Router()
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext) -> None:
     await state.clear()
-    is_admin = is_admin(message.from_user.id if message.from_user else None)
+    admin_access = is_admin(message.from_user.id if message.from_user else None)
 
     greeting = (
         "Добро пожаловать в <b>SandStreamBot</b>!\n\n"
@@ -25,20 +25,21 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
         "и других сыпучих строительных материалов."
     )
 
-    if is_admin:
+    if admin_access:
         greeting += "\n\n<i>У вас есть права администратора.</i>"
 
-    await message.answer(greeting, reply_markup=main_menu_keyboard(is_admin))
+    await message.answer(greeting, reply_markup=main_menu_keyboard(admin_access))
 
 
 @router.message(Command("cancel"))
 async def cmd_cancel(message: Message, state: FSMContext) -> None:
+    user_id = message.from_user.id if message.from_user else None
     current_state = await state.get_state()
 
     if current_state is None:
         await message.answer(
             "Сейчас нет активного сценария.",
-            reply_markup=main_menu_keyboard(is_admin(message.from_user.id if message.from_user else None)),
+            reply_markup=main_menu_keyboard(is_admin(user_id)),
         )
         return
 
@@ -46,7 +47,7 @@ async def cmd_cancel(message: Message, state: FSMContext) -> None:
     await message.answer(
         "❌ Действие отменено.\n\n"
         "Все введённые данные очищены.",
-        reply_markup=main_menu_keyboard(is_admin(message.from_user.id if message.from_user else None)),
+        reply_markup=main_menu_keyboard(is_admin(user_id)),
     )
 
 
