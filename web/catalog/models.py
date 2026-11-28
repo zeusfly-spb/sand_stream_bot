@@ -130,6 +130,20 @@ class Listing(models.Model):
         verbose_name = "объявление"
         verbose_name_plural = "Объявления"
         ordering = ("-created_at",)
+        indexes = [
+            models.Index(
+                fields=["status", "material_type", "city", "-published_at"],
+                name="listing_catalog_newest_idx",
+            ),
+            models.Index(
+                fields=["status", "material_type", "city", "price"],
+                name="listing_catalog_price_idx",
+            ),
+            models.Index(
+                fields=["status", "latitude", "longitude"],
+                name="listing_geo_idx",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.title} — {self.city_raw or 'без города'}"

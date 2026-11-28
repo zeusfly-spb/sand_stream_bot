@@ -15,9 +15,15 @@ from app.services.search import (
     get_listing_by_id,
     get_listings_page,
 )
-from app.states.search import SearchForm
 
 router = Router()
+
+
+def _format_quantity(listing) -> str:
+    quantity = listing.quantity or "Не указано"
+    if listing.quantity and listing.quantity_unit:
+        quantity = f"{listing.quantity} {listing.quantity_unit}"
+    return quantity
 
 
 @router.callback_query(F.data.startswith("catalog:detail:"))
@@ -67,7 +73,7 @@ async def show_listing_detail(
             price += f" / {price_unit}"
     else:
         price = "Цена не указана"
-    
+
     if listing.contact_phone:
         phone = (
             f'<a href="tel:{escape(listing.contact_phone, quote=True)}">'
@@ -75,10 +81,8 @@ async def show_listing_detail(
         )
     else:
         phone = "Не указан"
-    
-    quantity = listing.quantity or "Не указано"
-    if listing.quantity_unit:
-        quantity += f" {listing.quantity_unit}"
+
+    quantity = _format_quantity(listing)
 
     text = (
         f"<b>{escape(listing.title)}</b>\n\n"
@@ -89,7 +93,6 @@ async def show_listing_detail(
         f"<b>Описание:</b>\n"
         f"{escape(listing.description or 'Описание отсутствует')}\n\n"
         f"📌 Адрес: {escape(listing.address or 'Не указан')}\n"
-        f"👤 Продавец: {escape(listing.contact_name or 'Не указан')}\n"
         f"👤 Продавец: {escape(listing.contact_name or 'Не указан')}\n"
         f"📞 Телефон: {phone}"
     )
@@ -109,7 +112,8 @@ async def show_catalog_page(
     state: FSMContext,
     page: int = 0,
     edit: bool = False,
-) -> None:
+) -> bool:
+    """Показывает страницу каталога. True — есть результаты."""
     data = await state.get_data()
 
     material_id = data.get("material_id")
@@ -126,11 +130,9 @@ async def show_catalog_page(
     )
 
     if not listings:
-        await message.answer("Объявления не найдены.")
-        return
+        return False
 
     await state.update_data(catalog_page=page)
-    await state.set_state(SearchForm.results)
 
     lines = [
         f"<b>🔎 Результаты поиска — страница {page + 1}</b>",
@@ -160,7 +162,7 @@ async def show_catalog_page(
             f"🪨 <b>{escape(listing.title)}</b>\n"
             f"Материал: {escape(material)}\n"
             f"Город: {escape(city)}\n"
-            f"Количество: {escape(listing.quantity or 'Не указано')}\n"
+            f"Количество: {escape(_format_quantity(listing))}\n"
             f"Цена: {escape(price)}"
         )
         lines.append("")
@@ -187,6 +189,8 @@ async def show_catalog_page(
             reply_markup=keyboard,
         )
 
+    return True
+
 
 @router.callback_query(F.data.startswith("catalog:page:"))
 async def change_catalog_page(
@@ -212,12 +216,15 @@ async def change_catalog_page(
         )
         return
 
-    await show_catalog_page(
+    found = await show_catalog_page(
         callback.message,
         state,
         page,
         edit=True,
     )
+    if not found:
+        await callback.answer("Объявления не найдены.", show_alert=True)
+        return
     await callback.answer()
 
 
@@ -255,12 +262,15 @@ async def change_catalog_sort(
         catalog_page=0,
     )
 
-    await show_catalog_page(
+    found = await show_catalog_page(
         callback.message,
         state,
         page=0,
         edit=True,
     )
+    if not found:
+        await callback.answer("Объявления не найдены.", show_alert=True)
+        return
 
     await callback.answer("Сортировка изменена.")
 

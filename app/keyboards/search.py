@@ -6,16 +6,10 @@ from catalog.models import City, MaterialType
 ANY_MATERIAL = "🪨 Любой материал"
 ANY_CITY = "🗺 Вся область"
 BACK = "🔙 В главное меню"
-SEARCH_BY_CITY = "🏙 Поиск по городу"
-SEARCH_NEARBY = "📍 Рядом со мной"
+ALL_PRICES = "💰 Все объявления"
+FREE_ONLY = "🆓 Только бесплатные"
+PAID_ONLY = "💵 Только платные"
 
-GEO_RADII = {
-    "5 км": 5,
-    "10 км": 10,
-    "25 км": 25,
-    "50 км": 50,
-    "100 км": 100,
-}
 
 def _build(buttons: list[str]) -> ReplyKeyboardMarkup:
     rows = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]
@@ -27,29 +21,36 @@ def _build(buttons: list[str]) -> ReplyKeyboardMarkup:
     )
 
 
-@sync_to_async
-def material_keyboard() -> ReplyKeyboardMarkup:
-    names = list(
+def _active_material_names() -> tuple[str, ...]:
+    return tuple(
         MaterialType.objects.filter(is_active=True)
         .order_by("name")
         .values_list("name", flat=True)
     )
-    return _build([ANY_MATERIAL] + names + [BACK])
 
 
-@sync_to_async
-def city_keyboard() -> ReplyKeyboardMarkup:
-    names = list(
+def _active_city_names() -> tuple[str, ...]:
+    return tuple(
         City.objects.filter(is_active=True)
         .order_by("name")
         .values_list("name", flat=True)
     )
-    return _build([ANY_CITY] + names + [BACK])
 
 
-ALL_PRICES = "💰 Все объявления"
-FREE_ONLY = "🆓 Только бесплатные"
-PAID_ONLY = "💵 Только платные"
+@sync_to_async
+def material_keyboard() -> ReplyKeyboardMarkup:
+    return _build([ANY_MATERIAL, *_active_material_names(), BACK])
+
+
+@sync_to_async
+def city_keyboard() -> ReplyKeyboardMarkup:
+    return _build([ANY_CITY, *_active_city_names(), BACK])
+
+
+@sync_to_async
+def listing_city_keyboard() -> ReplyKeyboardMarkup:
+    """Клавиатура городов для создания объявления (без «Вся область»)."""
+    return _build([*_active_city_names(), BACK])
 
 
 def price_type_keyboard() -> ReplyKeyboardMarkup:
@@ -60,33 +61,4 @@ def price_type_keyboard() -> ReplyKeyboardMarkup:
         BACK,
     ])
 
-def search_mode_keyboard() -> ReplyKeyboardMarkup:
-    return _build([
-        SEARCH_BY_CITY,
-        SEARCH_NEARBY,
-        BACK,
-    ])
-
-
-def geo_location_keyboard() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [
-                KeyboardButton(
-                    text="📍 Отправить геолокацию",
-                    request_location=True,
-                )
-            ],
-            [KeyboardButton(text=BACK)],
-        ],
-        resize_keyboard=True,
-        input_field_placeholder="Отправьте свою геолокацию",
-    )
-
-
-def geo_radius_keyboard() -> ReplyKeyboardMarkup:
-    return _build([
-        *GEO_RADII.keys(),
-        BACK,
-    ])
 

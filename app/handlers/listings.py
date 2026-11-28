@@ -3,7 +3,6 @@ from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
-from app.config import settings
 from app.states.listing import ListingForm
 
 from decimal import Decimal, InvalidOperation
@@ -13,9 +12,12 @@ from app.keyboards.listings import (
     location_keyboard,
     QUANTITY_UNITS,
 )
+from app.keyboards.main_menu import ADD_LISTING, main_menu_keyboard
+from app.keyboards.search import BACK, listing_city_keyboard
+from app.services.search import find_city
+from app.services.access import is_admin
 
 from html import escape
-from aiogram.filters import Command
 from app.services.listings import create_listing, UNIT_LABELS
 import logging
 logger = logging.getLogger(__name__)
@@ -23,6 +25,9 @@ logger = logging.getLogger(__name__)
 
 
 router = Router()
+
+
+
 async def show_listing_preview(
     message: Message,
     state: FSMContext,
@@ -74,35 +79,15 @@ async def show_listing_preview(
         reply_markup=listing_confirmation_keyboard(),
     )
 
-@router.message(Command("cancel"))
-async def cancel_listing_creation(
-    message: Message,
-    state: FSMContext,
-) -> None:
-    current_state = await state.get_state()
 
-    if current_state is None:
-        await message.answer(
-            "Сейчас у вас нет активного создания объявления."
-        )
-        return
-
-    await state.clear()
-
-    await message.answer(
-        "❌ Создание объявления отменено.\n\n"
-        "Все введённые данные очищены.",
-        reply_markup=ReplyKeyboardRemove(),
-    )
-
-@router.message(F.text == "➕ Добавить объявление")
+@router.message(F.text == ADD_LISTING)
 async def start_listing(
     message: Message,
     state: FSMContext,
 ) -> None:
     user_id = message.from_user.id if message.from_user else 0
 
-    if user_id not in settings.admin_id_set:
+    if not is_admin(user_id):
         await message.answer(
             "У вас нет прав для создания объявлений."
         )
@@ -110,7 +95,7 @@ async def start_listing(
 
     current_state = await state.get_state()
 
-    if current_state is not None:
+    if current_state is not None and current_state.startswith("ListingForm:"):
         await message.answer(
             "⚠️ У вас уже есть незавершённое объявление.\n\n"
             "Продолжите заполнение или отправьте /cancel, "
@@ -118,13 +103,15 @@ async def start_listing(
         )
         return
 
+    await state.clear()
     await state.set_state(ListingForm.material)
 
     await message.answer(
         "➕ <b>Новое объявление</b>\n\n"
         "Шаг 1 из 10.\n"
         "Введите название материала:\n\n"
-        "Например: песок карьерный, щебень гранитный."
+        "Например: песок карьерный, щебень гранитный.",
+        reply_markup=ReplyKeyboardRemove(),
     )
 
 
@@ -314,8 +301,8 @@ async def process_price(
     await message.answer(
         f"Цена: {price_text}.\n\n"
         "Шаг 7 из 10.\n"
-        "Укажите город или населённый пункт:\n\n"
-        "Например: Санкт-Петербург или Всеволожск."
+        "Выберите город из списка:",
+        reply_markup=await listing_city_keyboard(),
     )
 
 
@@ -324,24 +311,43 @@ async def process_city(
     message: Message,
     state: FSMContext,
 ) -> None:
-    if not message.text or not message.text.strip():
-        await message.answer("Пожалуйста, укажите город или населённый пункт.")
+    text = (message.text or "").strip()
+
+    if not text:
+        await message.answer(
+            "Выберите город кнопкой.",
+            reply_markup=await listing_city_keyboard(),
+        )
         return
 
-    city = message.text.strip()
-
-    if len(city) > 100:
-        await message.answer("Название города слишком длинное.")
+    if text == BACK:
+        await state.clear()
+        user_id = message.from_user.id if message.from_user else 0
+        await message.answer(
+            "Создание объявления отменено.",
+            reply_markup=main_menu_keyboard(is_admin(user_id)),
+        )
         return
 
-    await state.update_data(city=city)
+    city = await find_city(text)
+    if city is None:
+        await message.answer(
+            "Такого города нет в списке.\n"
+            "Выберите вариант кнопкой.",
+            reply_markup=await listing_city_keyboard(),
+        )
+        return
+
+    await state.update_data(city=city.name, city_id=city.id)
     await state.set_state(ListingForm.address)
 
     await message.answer(
+        f"Город: <b>{escape(city.name)}</b>.\n\n"
         "Шаг 8 из 10.\n"
         "Укажите адрес или местоположение материала.\n\n"
         "Например: улица Промышленная, участок 15.\n\n"
-        "Если адрес неизвестен, отправьте дефис (-)."
+        "Если адрес неизвестен, отправьте дефис (-).",
+        reply_markup=ReplyKeyboardRemove(),
     )
 
 
@@ -425,7 +431,7 @@ async def confirm_listing(
 ) -> None:
     user = callback.from_user
 
-    if user.id not in settings.admin_id_set:
+    if not is_admin(user.id):
         await callback.answer(
             "У вас нет прав.",
             show_alert=True,
@@ -465,7 +471,8 @@ async def confirm_listing(
         await callback.message.answer(
             "✅ <b>Объявление создано!</b>\n\n"
             f"Номер объявления: <b>#{listing_id}</b>\n"
-            "Статус: Активно."
+            "Статус: Активно.",
+            reply_markup=main_menu_keyboard(is_admin(user.id)),
         )
 
 
@@ -480,10 +487,13 @@ async def cancel_listing(
     await state.clear()
     await callback.answer("Создание объявления отменено.")
 
+    user_id = callback.from_user.id if callback.from_user else 0
+
     if isinstance(callback.message, Message):
         await callback.message.edit_reply_markup(reply_markup=None)
         await callback.message.answer(
-            "❌ Создание объявления отменено."
+            "❌ Создание объявления отменено.",
+            reply_markup=main_menu_keyboard(is_admin(user_id)),
         )
 
 

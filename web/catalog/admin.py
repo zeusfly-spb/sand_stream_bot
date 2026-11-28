@@ -2,7 +2,14 @@ from django.contrib import admin
 from django.db.models import Count
 from django.utils.html import format_html
 
-from .models import City, Listing, ListingPhoto, MaterialType
+from .models import (
+    City,
+    Listing,
+    ListingPhoto,
+    MaterialType,
+    Notification,
+    Subscription,
+)
 
 
 class ListingPhotoInline(admin.TabularInline):
@@ -49,7 +56,15 @@ class ListingAdmin(admin.ModelAdmin):
             "fields": ("material_type", "material_raw", "city", "city_raw"),
         }),
         ("Условия", {
-            "fields": ("quantity", "price", "price_unit", "address"),
+            "fields": (
+                "quantity",
+                "quantity_unit",
+                "price",
+                "price_unit",
+                "address",
+                "latitude",
+                "longitude",
+            ),
         }),
         ("Продавец", {
             "fields": ("seller", "contact_name", "contact_phone"),
@@ -115,3 +130,18 @@ class CityAdmin(admin.ModelAdmin):
 
 admin.site.unregister(ListingPhoto) if ListingPhoto in admin.site._registry else None
 admin.site.register(ListingPhoto)
+
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    list_display = ("subscriber", "material_type", "city", "is_active", "created_at")
+    list_filter = ("is_active", "material_type", "city")
+    search_fields = ("subscriber__username", "subscriber__telegram_id")
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ("kind", "user", "listing", "is_sent", "sent_at", "created_at")
+    list_filter = ("kind", "is_sent")
+    search_fields = ("text", "user__username", "user__telegram_id")
+    readonly_fields = ("created_at",)

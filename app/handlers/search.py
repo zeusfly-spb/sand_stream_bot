@@ -4,8 +4,8 @@ from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from app.config import settings
-from app.keyboards.main_menu import main_menu_keyboard
+from app.keyboards.main_menu import MENU_BUTTONS, main_menu_keyboard
+from app.services.access import is_admin
 from app.keyboards.search import (
     ALL_PRICES,
     ANY_CITY,
@@ -16,67 +16,37 @@ from app.keyboards.search import (
     city_keyboard,
     material_keyboard,
     price_type_keyboard,
-    SEARCH_BY_CITY,
-    SEARCH_NEARBY,
-    search_mode_keyboard,
 )
 from app.services.search import find_city, find_material
 from app.states.search import SearchForm
 from app.handlers.catalog import show_catalog_page
 
-MENU_BUTTONS = ("🔎 Найти материалы", "➕ Добавить объявление", "ℹ️ Помощь")
-
 router = Router()
 
 
+
+
 async def _back_to_menu(message: Message, state: FSMContext) -> None:
-    user_id = message.from_user.id if message.from_user else 0
-    is_admin = user_id in settings.admin_id_set
     await state.clear()
     await message.answer(
         "Возвращаемся в главное меню.",
-        reply_markup=main_menu_keyboard(is_admin),
+        reply_markup=main_menu_keyboard(is_admin(message.from_user.id if message.from_user else None)),
     )
 
 
 @router.message(F.text == "🔎 Найти материалы")
 async def start_search(message: Message, state: FSMContext) -> None:
-    await state.set_state(SearchForm.mode)
+    await state.clear()
+    await state.set_state(SearchForm.material)
     await state.update_data(
+        search_mode="city",
         sort_by="newest",
         catalog_page=0,
     )
 
     await message.answer(
         "🔎 <b>Поиск строительных материалов</b>\n\n"
-        "Как будем искать предложения?",
-        reply_markup=search_mode_keyboard(),
-    )
-
-@router.message(SearchForm.mode, F.text)
-async def process_search_mode(
-    message: Message,
-    state: FSMContext,
-) -> None:
-    text = (message.text or "").strip()
-
-    if text == BACK or text in MENU_BUTTONS:
-        await _back_to_menu(message, state)
-        return
-
-    if text not in (SEARCH_BY_CITY, SEARCH_NEARBY):
-        await message.answer(
-            "Выберите способ поиска кнопкой.",
-            reply_markup=search_mode_keyboard(),
-        )
-        return
-
-    mode = "city" if text == SEARCH_BY_CITY else "near_me"
-
-    await state.update_data(search_mode=mode)
-    await state.set_state(SearchForm.material)
-
-    await message.answer(
+        "Шаг 1 из 3.\n"
         "Выберите тип материала:",
         reply_markup=await material_keyboard(),
     )
@@ -109,7 +79,7 @@ async def process_search_material(message: Message, state: FSMContext) -> None:
 
     await message.answer(
         f"Материал: <b>{chosen}</b>.\n\n"
-        "Шаг 2 из 2.\n"
+        "Шаг 2 из 3.\n"
         "Выберите город:",
         reply_markup=await city_keyboard(),
     )
@@ -177,18 +147,24 @@ async def process_search_price(
 
     await state.update_data(price_type=price_filters[text])
 
-    await show_catalog_page(
+    found = await show_catalog_page(
         message=message,
         state=state,
         page=0,
     )
 
-    user_id = message.from_user.id if message.from_user else 0
+    # Сбрасываем имя состояния, но оставляем фильтры для пагинации/сортировки.
+    await state.set_state(None)
 
-    await message.answer(
-        "Поиск завершён. Для нового поиска нажмите "
-        "«🔎 Найти материалы».",
-        reply_markup=main_menu_keyboard(
-            user_id in settings.admin_id_set
-        ),
-    )
+    if found:
+        await message.answer(
+            "Поиск завершён. Для нового поиска нажмите "
+            "«🔎 Найти материалы».",
+            reply_markup=main_menu_keyboard(is_admin(message.from_user.id if message.from_user else None)),
+        )
+    else:
+        await message.answer(
+            "Объявления не найдены.\n"
+            "Измените фильтры или начните новый поиск.",
+            reply_markup=main_menu_keyboard(is_admin(message.from_user.id if message.from_user else None)),
+        )

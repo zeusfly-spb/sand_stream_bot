@@ -11,11 +11,19 @@ load_dotenv(BASE_DIR.parent / ".env")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "DJANGO_SECRET_KEY is not set. Add it to the environment or .env file."
+    )
+
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if host.strip()
+]
 
 
 # Application definition
@@ -131,4 +139,3 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Настройки загружаемых файлов
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
-
