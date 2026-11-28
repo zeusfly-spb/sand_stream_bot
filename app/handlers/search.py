@@ -4,8 +4,8 @@ from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from app.config import settings
 from app.keyboards.main_menu import MENU_BUTTONS, main_menu_keyboard
+from app.services.access import is_admin
 from app.keyboards.search import (
     ALL_PRICES,
     ANY_CITY,
@@ -24,16 +24,13 @@ from app.handlers.catalog import show_catalog_page
 router = Router()
 
 
-def _is_admin(message: Message) -> bool:
-    user_id = message.from_user.id if message.from_user else 0
-    return user_id in settings.admin_id_set
 
 
 async def _back_to_menu(message: Message, state: FSMContext) -> None:
     await state.clear()
     await message.answer(
         "Возвращаемся в главное меню.",
-        reply_markup=main_menu_keyboard(_is_admin(message)),
+        reply_markup=main_menu_keyboard(is_admin(message.from_user.id if message.from_user else None)),
     )
 
 
@@ -163,11 +160,11 @@ async def process_search_price(
         await message.answer(
             "Поиск завершён. Для нового поиска нажмите "
             "«🔎 Найти материалы».",
-            reply_markup=main_menu_keyboard(_is_admin(message)),
+            reply_markup=main_menu_keyboard(is_admin(message.from_user.id if message.from_user else None)),
         )
     else:
         await message.answer(
             "Объявления не найдены.\n"
             "Измените фильтры или начните новый поиск.",
-            reply_markup=main_menu_keyboard(_is_admin(message)),
+            reply_markup=main_menu_keyboard(is_admin(message.from_user.id if message.from_user else None)),
         )
