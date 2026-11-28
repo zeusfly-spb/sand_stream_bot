@@ -3,7 +3,7 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from app.config import settings
+from app.services.access import is_admin
 from app.keyboards.main_menu import (
     MANAGE_LISTINGS,
     MY_SUBSCRIPTIONS,
@@ -13,15 +13,11 @@ from app.keyboards.main_menu import (
 router = Router()
 
 
-def _is_admin(message: Message) -> bool:
-    user_id = message.from_user.id if message.from_user else 0
-    return user_id in settings.admin_id_set
-
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext) -> None:
     await state.clear()
-    is_admin = _is_admin(message)
+    is_admin = is_admin(message.from_user.id if message.from_user else None)
 
     greeting = (
         "Добро пожаловать в <b>SandStreamBot</b>!\n\n"
@@ -42,7 +38,7 @@ async def cmd_cancel(message: Message, state: FSMContext) -> None:
     if current_state is None:
         await message.answer(
             "Сейчас нет активного сценария.",
-            reply_markup=main_menu_keyboard(_is_admin(message)),
+            reply_markup=main_menu_keyboard(is_admin(message.from_user.id if message.from_user else None)),
         )
         return
 
@@ -50,7 +46,7 @@ async def cmd_cancel(message: Message, state: FSMContext) -> None:
     await message.answer(
         "❌ Действие отменено.\n\n"
         "Все введённые данные очищены.",
-        reply_markup=main_menu_keyboard(_is_admin(message)),
+        reply_markup=main_menu_keyboard(is_admin(message.from_user.id if message.from_user else None)),
     )
 
 
@@ -65,7 +61,7 @@ async def stub_subscriptions(message: Message) -> None:
 
 @router.message(F.text == MANAGE_LISTINGS)
 async def stub_manage_listings(message: Message) -> None:
-    if not _is_admin(message):
+    if not is_admin(message.from_user.id if message.from_user else None):
         await message.answer("У вас нет прав для управления объявлениями.")
         return
 
