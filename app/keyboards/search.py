@@ -1,5 +1,3 @@
-from functools import lru_cache
-
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 from asgiref.sync import sync_to_async
 
@@ -34,7 +32,6 @@ def _build(buttons: list[str]) -> ReplyKeyboardMarkup:
     )
 
 
-@lru_cache(maxsize=1)
 def _active_material_names() -> tuple[str, ...]:
     return tuple(
         MaterialType.objects.filter(is_active=True)
@@ -43,18 +40,12 @@ def _active_material_names() -> tuple[str, ...]:
     )
 
 
-@lru_cache(maxsize=1)
 def _active_city_names() -> tuple[str, ...]:
     return tuple(
         City.objects.filter(is_active=True)
         .order_by("name")
         .values_list("name", flat=True)
     )
-
-
-def clear_directory_cache() -> None:
-    _active_material_names.cache_clear()
-    _active_city_names.cache_clear()
 
 
 @sync_to_async
