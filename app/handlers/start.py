@@ -1,12 +1,10 @@
-from aiogram import F, Router
+from aiogram import Router
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from app.services.access import is_admin
 from app.keyboards.main_menu import (
-    MANAGE_LISTINGS,
-    MY_SUBSCRIPTIONS,
     main_menu_keyboard,
 )
 
@@ -51,22 +49,3 @@ async def cmd_cancel(message: Message, state: FSMContext) -> None:
     )
 
 
-@router.message(F.text == MY_SUBSCRIPTIONS)
-async def stub_subscriptions(message: Message) -> None:
-    await message.answer(
-        "🔔 Подписки скоро появятся.\n\n"
-        "Здесь можно будет следить за новыми объявлениями "
-        "по выбранному материалу и городу."
-    )
-
-
-@router.message(F.text == MANAGE_LISTINGS)
-async def stub_manage_listings(message: Message) -> None:
-    if not is_admin(message.from_user.id if message.from_user else None):
-        await message.answer("У вас нет прав для управления объявлениями.")
-        return
-
-    await message.answer(
-        "⚙️ Управление объявлениями скоро появится.\n\n"
-        "Пока можно создавать новые через «➕ Добавить объявление»."
-    )
