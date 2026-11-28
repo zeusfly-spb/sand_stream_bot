@@ -7,8 +7,6 @@ class SearchForm(StatesGroup):
     city = State()
     price_type = State()
     results = State()
-    geo_location = State()
-    geo_radius = State()
     
 
 
