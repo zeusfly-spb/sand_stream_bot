@@ -3,7 +3,6 @@ from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
-from app.config import settings
 from app.states.listing import ListingForm
 
 from decimal import Decimal, InvalidOperation
@@ -16,6 +15,7 @@ from app.keyboards.listings import (
 from app.keyboards.main_menu import ADD_LISTING, main_menu_keyboard
 from app.keyboards.search import BACK, listing_city_keyboard
 from app.services.search import find_city
+from app.services.access import is_admin
 
 from html import escape
 from app.services.listings import create_listing, UNIT_LABELS
@@ -26,9 +26,6 @@ logger = logging.getLogger(__name__)
 
 router = Router()
 
-
-def _is_admin(user_id: int) -> bool:
-    return user_id in settings.admin_id_set
 
 
 async def show_listing_preview(
@@ -90,7 +87,7 @@ async def start_listing(
 ) -> None:
     user_id = message.from_user.id if message.from_user else 0
 
-    if not _is_admin(user_id):
+    if not is_admin(user_id):
         await message.answer(
             "У вас нет прав для создания объявлений."
         )
@@ -328,7 +325,7 @@ async def process_city(
         user_id = message.from_user.id if message.from_user else 0
         await message.answer(
             "Создание объявления отменено.",
-            reply_markup=main_menu_keyboard(_is_admin(user_id)),
+            reply_markup=main_menu_keyboard(is_admin(user_id)),
         )
         return
 
@@ -434,7 +431,7 @@ async def confirm_listing(
 ) -> None:
     user = callback.from_user
 
-    if not _is_admin(user.id):
+    if not is_admin(user.id):
         await callback.answer(
             "У вас нет прав.",
             show_alert=True,
@@ -475,7 +472,7 @@ async def confirm_listing(
             "✅ <b>Объявление создано!</b>\n\n"
             f"Номер объявления: <b>#{listing_id}</b>\n"
             "Статус: Активно.",
-            reply_markup=main_menu_keyboard(_is_admin(user.id)),
+            reply_markup=main_menu_keyboard(is_admin(user.id)),
         )
 
 
@@ -496,7 +493,7 @@ async def cancel_listing(
         await callback.message.edit_reply_markup(reply_markup=None)
         await callback.message.answer(
             "❌ Создание объявления отменено.",
-            reply_markup=main_menu_keyboard(_is_admin(user_id)),
+            reply_markup=main_menu_keyboard(is_admin(user_id)),
         )
 
 
