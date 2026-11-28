@@ -58,7 +58,7 @@ Telegram-бот и админ-панель для публикации и пои
 
 | Компонент | Версия / выбор |
 |---|---|
-| Python | 3.11+ (проверено на 3.13) |
+| Python | 3.12+ (проверено на 3.13) |
 | Telegram | aiogram 3.33 |
 | Backend / ORM | Django 6 |
 | БД | PostgreSQL 16 (рекомендуется) или SQLite |
@@ -70,7 +70,7 @@ Telegram-бот и админ-панель для публикации и пои
 
 ## Требования
 
-- Python 3.11+
+- Python 3.12+
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) — для Postgres и Redis
 - Токен бота от [@BotFather](https://t.me/BotFather)
 - Свой числовой Telegram ID (для `ADMIN_IDS`) — удобно взять у [@userinfobot](https://t.me/userinfobot)
@@ -83,7 +83,7 @@ Telegram-бот и админ-панель для публикации и пои
 
 ```powershell
 cd SandStreamBot
-py -3.11 -m venv .venv
+py -3.13 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
